@@ -34,7 +34,6 @@ def scrape_all(category: str = "mobile-phones", limit: int = 5):
     }
     
     try:
-        # Scrape Jumia
         jumia = JumiaScraper()
         jumia_products = jumia.scrape_category(category, limit)
         results["jumia"] = jumia_products
@@ -42,7 +41,6 @@ def scrape_all(category: str = "mobile-phones", limit: int = 5):
         results["jumia_error"] = str(e)
     
     try:
-        # Scrape Jiji
         jiji = JijiScraper()
         jiji_products = jiji.scrape_category(category, limit)
         results["jiji"] = jiji_products
