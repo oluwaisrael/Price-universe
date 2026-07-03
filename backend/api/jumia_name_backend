@@ -1,0 +1,18 @@
+import cloudscraper
+from bs4 import BeautifulSoup
+
+scraper = cloudscraper.create_scraper()
+url = "https://www.jumia.com.ng/mobile-phones/"
+response = scraper.get(url, timeout=10)
+print(f"Status: {response.status_code}")
+
+soup = BeautifulSoup(response.content, "html.parser")
+
+# Find product cards - adjust selector if your scraper uses a different one
+cards = soup.select("article.prd")
+print(f"Found {len(cards)} product cards (article.prd)")
+
+if cards:
+    card = cards[0]
+    print("\n--- FULL HTML OF FIRST CARD ---\n")
+    print(card.prettify()[:3000])
