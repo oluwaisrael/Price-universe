@@ -4,6 +4,7 @@ from typing import List, Dict
 from datetime import datetime
 import logging
 
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -11,6 +12,34 @@ class JijiScraper:
     def __init__(self):
         self.base_url = "https://jiji.ng"
         self.scraper = cloudscraper.create_scraper()
+
+    def _extract_name(self, item) -> str:
+        """
+        Extract product name with fallback chain.
+        Tier 1: img[alt] (primary - currently working)
+        Tier 2: a[title] (link title attribute, if present)
+        Tier 3: any element with 'title' in its class (generic text fallback)
+        """
+
+        # Tier 1: img alt text (primary)
+        img = item.select_one("img")
+        if img and img.get("alt"):
+            return img.get("alt").strip()
+    
+        # Tier 2: link title attribute
+        link_with_title = item.select_one("a[title]")
+        if link_with_title and link_with_title.get("title"):
+            logger.warning("Name extracted via fallback: a[title]")
+            return link_with_title.get("title").strip()
+    
+        # Tier 3: any element whose class contains 'title'
+        title_el = item.select_one("[class*='title']")
+        if title_el and title_el.get_text(strip=True):
+            logger.warning("Name extracted via fallback: [class*='title']")
+            return title_el.get_text(strip=True)
+    
+        return None    
+        
     
     def scrape_category(self, category: str = "mobile-phones", item_count: int = 5) -> List[Dict]:
         """Scrape products from Jiji using cloudscraper + BeautifulSoup"""
@@ -34,15 +63,12 @@ class JijiScraper:
             products = []
             for item in product_items:
                 try:
-                    # Extract name from img alt text
-                    img = item.select_one("img")
-                    name = img.get("alt") if img else None
-                    
-                    # Skip if no name found (e.g., sponsored items)
+                    name = self._extract_name(item)
+
                     if not name:
-                        logger.warning("Skipping product without name")
-                        continue
-                    
+                       logger.warning("Skipping product without name")
+                       continue
+
                     # Extract price
                     price_div = item.select_one("div[class*='price']")
                     price_text = price_div.get_text(strip=True) if price_div else "0"
