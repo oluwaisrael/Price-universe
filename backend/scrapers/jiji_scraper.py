@@ -3,6 +3,8 @@ from bs4 import BeautifulSoup
 from typing import List, Dict
 from datetime import datetime
 import logging
+import time
+import random
 
 
 logging.basicConfig(level=logging.INFO)
@@ -47,6 +49,7 @@ class JijiScraper:
         
         try:
             print(f"🔍 Fetching: {url}")
+            time.sleep(random.uniform(1.5, 4.0))
             response = self.scraper.get(url, timeout=10)
             response.raise_for_status()
             

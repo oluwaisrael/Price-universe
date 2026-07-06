@@ -1,5 +1,7 @@
 import cloudscraper
 import requests
+import time
+import random
 from bs4 import BeautifulSoup
 from typing import List, Dict
 from datetime import datetime
@@ -50,11 +52,12 @@ class JumiaScraper:
         
     def scrape_category(self, category: str = "mobile-phones", item_count: int = 5) -> List[Dict]:
         """Scrape products from Jumia"""
-        # Use the working URL
+        # just so it Uses the working URL
         url = f"{self.base_url}/{category}/"
         
         try:
             print(f" Fetching: {url}")
+            time.sleep(random.uniform(1.5, 4.0))
             try:
                 response = self.scraper.get(url, timeout=15)
             except requests.exceptions.ConnectTimeout:
@@ -71,7 +74,7 @@ class JumiaScraper:
             
             soup = BeautifulSoup(response.content, "html.parser")
             
-            # Finding the product containers (articles with class 'prd')
+            # Finding the product containers (articles with class -- prd)
             products_html = soup.find_all("article", class_="prd", limit=item_count)
             
             print(f"Found {len(products_html)} products")
