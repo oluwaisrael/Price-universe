@@ -112,7 +112,7 @@ def main():
     scraper = JijiScraper()
     products = scraper.scrape_category("mobile-phones", item_count=5)
     
-    print(f"\n📊 Scraped {len(products)} products:\n")
+    print(f"\n Scraped {len(products)} products:\n")
     for p in products:
         print(f"  • {p['name']}")
         print(f"    Price: ₦{p['price']}")

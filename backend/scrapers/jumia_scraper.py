@@ -56,7 +56,7 @@ class JumiaScraper:
         url = f"{self.base_url}/{category}/"
         
         try:
-            print(f" Fetching: {url}")
+            print(f"Fetching: {url}")
             time.sleep(random.uniform(1.5, 4.0))
             try:
                 response = self.scraper.get(url, timeout=15)
