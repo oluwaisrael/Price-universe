@@ -1,6 +1,8 @@
 import asyncpg
-import os
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://localhost/ecommerce_price_tracker")
+from config import DATABASE_URL
+from config import PRICE_DROP_THRESHOLD_PERCENT, PRICE_DROP_THRESHOLD_ABSOLUTE
+from alerts.email_alerts import send_price_drop_alert
+
 pool = None
 async def connect_db():
     global pool
@@ -17,7 +19,6 @@ async def insert_products(products: list, site: str):
     """
     if not products:
         return 0
-
     inserted = 0
     async with pool.acquire() as conn:
         async with conn.transaction():
@@ -38,6 +39,18 @@ async def insert_products(products: list, site: str):
                 if last_price is not None and last_price == price:
                     continue
 
+                if last_price is not None and last_price > price:
+                    drop_abs = last_price - price
+                    drop_pct = (drop_abs / last_price) * 100
+                    if drop_pct >= PRICE_DROP_THRESHOLD_PERCENT or drop_abs >= PRICE_DROP_THRESHOLD_ABSOLUTE:
+                        send_price_drop_alert(
+                            product_name=p.get("name"),
+                            old_price=last_price,
+                            new_price=price,
+                            url=url,
+                            site=site,
+                        )
+
                 await conn.execute(
                     """
                     INSERT INTO price_history (product_name, price, url, site, category, seller)
@@ -51,5 +64,4 @@ async def insert_products(products: list, site: str):
                     p.get("seller"),
                 )
                 inserted += 1
-
     return inserted
