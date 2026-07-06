@@ -23,18 +23,18 @@ class JijiScraper:
         Tier 3: any element with 'title' in its class (generic text fallback)
         """
 
-        # Tier 1: img alt text (primary)
+        #img alt text (primary)
         img = item.select_one("img")
         if img and img.get("alt"):
             return img.get("alt").strip()
     
-        # Tier 2: link title attribute
+        #second link title attribute
         link_with_title = item.select_one("a[title]")
         if link_with_title and link_with_title.get("title"):
             logger.warning("Name extracted via fallback: a[title]")
             return link_with_title.get("title").strip()
     
-        # Tier 3: any element whose class contains 'title'
+        #3: any element whose class contains 'title'
         title_el = item.select_one("[class*='title']")
         if title_el and title_el.get_text(strip=True):
             logger.warning("Name extracted via fallback: [class*='title']")
@@ -48,7 +48,7 @@ class JijiScraper:
         url = f"{self.base_url}/{category}"
         
         try:
-            print(f"🔍 Fetching: {url}")
+            print(f"Fetching: {url}")
             time.sleep(random.uniform(1.5, 4.0))
             response = self.scraper.get(url, timeout=10)
             response.raise_for_status()
@@ -57,7 +57,7 @@ class JijiScraper:
             
             # Find product items
             product_items = soup.select("div.b-adverts-gallery-listing__item")[:item_count]
-            print(f"✅ Found {len(product_items)} products")
+            print(f"Found {len(product_items)} products")
             
             if not product_items:
                 logger.warning("No products found")
@@ -76,7 +76,7 @@ class JijiScraper:
                     price_div = item.select_one("div[class*='price']")
                     price_text = price_div.get_text(strip=True) if price_div else "0"
                     
-                    # Clean price: "₦ 245,000" → 245000
+                    
                     price_str = price_text.replace("₦", "").replace(",", "").strip().split()[0]
                     price = float(price_str) if price_str else 0.0
                     
