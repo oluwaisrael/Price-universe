@@ -37,7 +37,7 @@ async def _run_jiji(category: str, item_count: int):
     return len(products)
 
 
-@celery_app.task(bind=True, max_retries=3, default_retry_delay=60, rate_limit="10/)
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60, rate_limit="10/m")
 def scrape_jumia_task(self, category: str = "mobile-phones", item_count: int = 20):
     try:
         return asyncio.run(_run_jumia(category, item_count))
@@ -45,7 +45,7 @@ def scrape_jumia_task(self, category: str = "mobile-phones", item_count: int = 2
         raise self.retry(exc=exc)
 
 
-@celery_app.task(bind=True, max_retries=3, default_retry_delay=60, rate_limit="10/)
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60, rate_limit="10/m")
 def scrape_jiji_task(self, category: str = "mobile-phones", item_count: int = 20):
     try:
         return asyncio.run(_run_jiji(category, item_count))
