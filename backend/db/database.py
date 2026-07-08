@@ -65,3 +65,57 @@ async def insert_products(products: list, site: str):
                 )
                 inserted += 1
     return inserted
+
+async def get_latest_products(site: str = None, category: str = None, limit: int = 100):
+    """
+    Most recent price_history row per distinct (url, site) pair.
+    Used by GET /api/products for the list/table view.
+    """
+    filters = []
+    args = []
+    if site:
+        args.append(site)
+        filters.append(f"site = ${len(args)}")
+    if category:
+        args.append(category)
+        filters.append(f"category = ${len(args)}")
+    where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
+    args.append(limit)
+
+    query = f"""
+        SELECT DISTINCT ON (url, site)
+            id, product_name, price, url, site, category, seller, scraped_at
+        FROM price_history
+        {where_clause}
+        ORDER BY url, site, scraped_at DESC
+        LIMIT ${len(args)}
+    """
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(query, *args)
+    return [dict(r) for r in rows]
+
+async def get_product_history(url: str, site: str = None):
+    """
+    Full price time series for one product, oldest to newest.
+    Used by GET /api/products/history to feed the 3D price/time landscape.
+    """
+    if site:
+        query = """
+            SELECT id, product_name, price, url, site, category, seller, scraped_at
+            FROM price_history
+            WHERE url = $1 AND site = $2
+            ORDER BY scraped_at ASC
+        """
+        args = (url, site)
+    else:
+        query = """
+            SELECT id, product_name, price, url, site, category, seller, scraped_at
+            FROM price_history
+            WHERE url = $1
+            ORDER BY scraped_at ASC
+        """
+        args = (url,)
+
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(query, *args)
+    return [dict(r) for r in rows]

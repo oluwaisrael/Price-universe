@@ -1,12 +1,13 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
+from db.database import connect_db, disconnect_db, insert_products, get_latest_products, get_product_history
 from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime
 import sys
-sys.path.insert(0, '/Users/mac/Documents/Ecommerce/backend')
+import os
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from scrapers.jumia_scraper import JumiaScraper
 from scrapers.jiji_scraper import JijiScraper
-from db.database import connect_db, disconnect_db, insert_products
 
 app = FastAPI()
 
@@ -75,6 +76,21 @@ async def scrape_jiji(category: str = "mobile-phones", limit: int = 5):
     products = jiji.scrape_category(category, limit)
     await insert_products(products, "Jiji")
     return {"site": "Jiji", "products": products, "count": len(products)}
+@app.get("/api/products")
+async def list_products(site: str = None, category: str = None, limit: int = 100):
+    """Latest known price for each distinct (url, site) product. Powers the list/table view."""
+    products = await get_latest_products(site=site, category=category, limit=limit)
+    return {"count": len(products), "products": products}
+
+@app.get("/api/products/history")
+async def product_history(url: str, site: str = None):
+    """Full price time series for one product, ordered by scraped_at. Feeds the 3D landscape."""
+    if not url:
+        raise HTTPException(status_code=400, detail="url query param is required")
+    history = await get_product_history(url=url, site=site)
+    if not history:
+        raise HTTPException(status_code=404, detail="No history found for that url/site")
+    return {"url": url, "count": len(history), "history": history}
 
 if __name__ == "__main__":
     import uvicorn
