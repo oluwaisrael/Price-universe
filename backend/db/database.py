@@ -65,7 +65,6 @@ async def insert_products(products: list, site: str):
                 )
                 inserted += 1
     return inserted
-
 async def get_latest_products(site: str = None, category: str = None, limit: int = 100):
     """
     Most recent price_history row per distinct (url, site) pair.
@@ -73,12 +72,15 @@ async def get_latest_products(site: str = None, category: str = None, limit: int
     """
     filters = []
     args = []
+
     if site:
         args.append(site)
         filters.append(f"site = ${len(args)}")
+
     if category:
         args.append(category)
         filters.append(f"category = ${len(args)}")
+
     where_clause = f"WHERE {' AND '.join(filters)}" if filters else ""
     args.append(limit)
 
@@ -90,9 +92,12 @@ async def get_latest_products(site: str = None, category: str = None, limit: int
         ORDER BY url, site, scraped_at DESC
         LIMIT ${len(args)}
     """
+
     async with pool.acquire() as conn:
         rows = await conn.fetch(query, *args)
+
     return [dict(r) for r in rows]
+
 
 async def get_product_history(url: str, site: str = None):
     """
@@ -118,4 +123,5 @@ async def get_product_history(url: str, site: str = None):
 
     async with pool.acquire() as conn:
         rows = await conn.fetch(query, *args)
+
     return [dict(r) for r in rows]
