@@ -110,6 +110,19 @@ class JumiaScraper:
                     seller_tag = product.find("span", class_="seller")
                     seller = seller_tag.text.strip() if seller_tag else "Jumia"
                     
+                    # Extract image URL — Jumia lazy-loads real images into data-src,
+                    # and leaves a blank SVG placeholder in src. Check data-src first.
+                    img_tag = product.find("img")
+                    image_url = None
+                    if img_tag:
+                        image_url = (
+                            img_tag.get("data-src")
+                            or img_tag.get("data-srcset")
+                            or img_tag.get("src")
+                        )
+                        if image_url and "," in image_url:
+                            image_url = image_url.split(",")[0].strip().split(" ")[0]
+
                     product_data = {
                         "name": name,
                         "price": float(price) if price else 0.0,
@@ -117,6 +130,7 @@ class JumiaScraper:
                         "seller": seller,
                         "site": "Jumia",
                         "category": category,
+                        "image": image_url,
                         "scraped_at": datetime.now().isoformat()
                     }
                     
@@ -142,6 +156,8 @@ def main():
         print(f"  • {p['name']}")
         print(f"    Price: ₦{p['price']}")
         print(f"    URL: {p['url']}\n")
+        print(f"    Image: {p['image']}\n")
+
 
 if __name__ == "__main__":
     main()

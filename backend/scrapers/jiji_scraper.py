@@ -86,12 +86,26 @@ class JijiScraper:
                     if product_url and not product_url.startswith("http"):
                         product_url = f"{self.base_url}{product_url}"
                     
+                    # Extract image URL — Jumia lazy-loads real images into data-src,
+                    # and leaves a blank SVG placeholder in src. Check data-src first.
+                    img_tag = item.select_one("img")
+                    image_url = None
+                    if img_tag:
+                        image_url = (
+                            img_tag.get("data-src")
+                            or img_tag.get("data-srcset")
+                            or img_tag.get("src")
+                        )
+                        if image_url and "," in image_url:
+                            image_url = image_url.split(",")[0].strip().split(" ")[0]
+
                     product_data = {
                         "name": name,
                         "price": price,
                         "url": product_url,
                         "site": "Jiji",
                         "category": category,
+                        "image": image_url,
                         "scraped_at": datetime.now().isoformat()
                     }
                     
@@ -117,7 +131,7 @@ def main():
         print(f"  • {p['name']}")
         print(f"    Price: ₦{p['price']}")
         print(f"    URL: {p['url']}\n")
-        
+        print(f"    Image: {p['image']}\n")
 
 if __name__ == "__main__":
     main()

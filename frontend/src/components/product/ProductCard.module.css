@@ -11,6 +11,14 @@
   background: rgba(128, 128, 128, 0.15);
 }
 
+.image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  background: #fff;
+  display: block;
+}
+
 .body {
   display: flex;
   flex-direction: column;

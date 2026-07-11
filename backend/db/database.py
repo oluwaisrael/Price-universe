@@ -40,8 +40,8 @@ async def insert_products(products: list, site: str):
                     continue
 
                 if last_price is not None and last_price > price:
-                    drop_abs = last_price - price
-                    drop_pct = (drop_abs / last_price) * 100
+                    drop_abs = float(last_price) - float(price)
+                    drop_pct = (drop_abs / float(last_price)) * 100
                     if drop_pct >= PRICE_DROP_THRESHOLD_PERCENT or drop_abs >= PRICE_DROP_THRESHOLD_ABSOLUTE:
                         send_price_drop_alert(
                             product_name=p.get("name"),
@@ -53,8 +53,8 @@ async def insert_products(products: list, site: str):
 
                 await conn.execute(
                     """
-                    INSERT INTO price_history (product_name, price, url, site, category, seller)
-                    VALUES ($1, $2, $3, $4, $5, $6)
+                    INSERT INTO price_history (product_name, price, url, site, category, seller, image_url)
+                    VALUES ($1, $2, $3, $4, $5, $6, $7)
                     """,
                     p.get("name"),
                     price,
@@ -62,6 +62,7 @@ async def insert_products(products: list, site: str):
                     site,
                     p.get("category"),
                     p.get("seller"),
+                    p.get("image"),
                 )
                 inserted += 1
     return inserted
@@ -86,7 +87,7 @@ async def get_latest_products(site: str = None, category: str = None, limit: int
 
     query = f"""
         SELECT DISTINCT ON (url, site)
-            id, product_name, price, url, site, category, seller, scraped_at
+            id, product_name, price, url, site, category, seller, scraped_at, image_url
         FROM price_history
         {where_clause}
         ORDER BY url, site, scraped_at DESC
@@ -106,7 +107,7 @@ async def get_product_history(url: str, site: str = None):
     """
     if site:
         query = """
-            SELECT id, product_name, price, url, site, category, seller, scraped_at
+            SELECT id, product_name, price, url, site, category, seller, scraped_at, image_url
             FROM price_history
             WHERE url = $1 AND site = $2
             ORDER BY scraped_at ASC
@@ -114,7 +115,7 @@ async def get_product_history(url: str, site: str = None):
         args = (url, site)
     else:
         query = """
-            SELECT id, product_name, price, url, site, category, seller, scraped_at
+            SELECT id, product_name, price, url, site, category, seller, scraped_at, image_url
             FROM price_history
             WHERE url = $1
             ORDER BY scraped_at ASC
