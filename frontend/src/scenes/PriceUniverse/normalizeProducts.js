@@ -41,7 +41,7 @@ import { BASE_URL } from '../../api/client'
 // Site → color mapping. Extend as more sites are added.
 const SITE_COLORS = {
   Jumia: '#ff9900',
-  Jiji: '#3fae3f',
+  Jiji: '#22e5e5',
 }
 
 const DEFAULT_COLOR = '#888888'

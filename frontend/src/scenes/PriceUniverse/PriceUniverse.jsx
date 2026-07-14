@@ -4,13 +4,23 @@ import { Stars } from '@react-three/drei'
 import { EffectComposer, Bloom } from '@react-three/postprocessing'
 import { useProducts } from '../../hooks/useProducts'
 import { normalizeProducts } from './normalizeProducts'
-import { computeGalaxyLayout } from './galaxyLayout'
+import { computeGalaxyLayout, getGalaxyCenters } from './galaxyLayout'
 import ProductNode from './ProductNode'
+import GalaxyCore from './GalaxyCore'
 import CameraRig from './CameraRig'
 import DetailPanel from './DetailPanel'
 import styles from './PriceUniverse.module.css'
 
 const SEARCH_DEBOUNCE_MS = 500
+
+// Core colors intentionally match SITE_COLORS in normalizeProducts.js
+// (Jumia orange, Jiji cyan) — kept as a local constant rather than
+// importing normalizeProducts' internal map, since that map is
+// per-node tint logic and this is scene-level galaxy dressing.
+const GALAXY_CORE_COLORS = {
+  Jumia: '#ff9900',
+  Jiji: '#22e5e5',
+}
 
 /**
  * PriceUniverse — search-to-navigate.
@@ -30,6 +40,7 @@ function PriceUniverse({ searchValue = '' }) {
 
   const normalized = useMemo(() => normalizeProducts(rawProducts), [rawProducts])
   const nodes = useMemo(() => computeGalaxyLayout(normalized), [normalized])
+  const galaxyCenters = useMemo(() => getGalaxyCenters(), [])
   const selectedNode = useMemo(
     () => nodes.find((n) => n.id === selectedId) ?? null,
     [nodes, selectedId]
@@ -75,6 +86,14 @@ function PriceUniverse({ searchValue = '' }) {
           speed={0.5}
         />
 
+        {Object.entries(galaxyCenters).map(([site, center]) => (
+          <GalaxyCore
+            key={site}
+            center={center}
+            color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
+          />
+        ))}
+
         <Suspense fallback={null}>
           {nodes.map((node) => (
             <ProductNode
@@ -94,8 +113,8 @@ function PriceUniverse({ searchValue = '' }) {
 
         <EffectComposer>
           <Bloom
-            intensity={0}
-            luminanceThreshold={0.2}
+            intensity={0.9}
+            luminanceThreshold={0.25}
             luminanceSmoothing={0.9}
             mipmapBlur
           />

@@ -24,7 +24,6 @@ function Texture({ url }) {
 
   const { width, height } = texture.image
   const imageAspect = width / height
-  console.log("PI-DEBUG", { width: size.width, height: size.height, aspectRatio, maxDim })
   const maxDim = getResponsiveMaxDim(aspectRatio)
 
   const planeWidth = imageAspect >= 1 ? maxDim : maxDim * imageAspect
