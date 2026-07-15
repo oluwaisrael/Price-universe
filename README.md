@@ -1,4 +1,4 @@
-# 🌌 PriceUniverse
+#  PriceUniverse
 
 A cinematic 3D price intelligence platform for Nigerian e-commerce.
 
@@ -8,7 +8,7 @@ Built as a modern full-stack application with FastAPI, React Three Fiber, Postgr
 
 ---
 
-## ✨ Features
+##  Features
 
 -  Interactive 3D galaxy visualization
 -  Search products or paste a marketplace URL
@@ -24,7 +24,7 @@ Built as a modern full-stack application with FastAPI, React Three Fiber, Postgr
 
 ---
 
-## 🛠 Tech Stack
+##  Tech Stack
 
 ### Frontend
 - React
@@ -71,7 +71,7 @@ npm run dev
 
 ---
 
-## 📂 Project Structure
+##  Project Structure
 
 ```
 backend/
@@ -92,7 +92,7 @@ frontend/
 
 ---
 
-## 🎯 Roadmap
+##  Roadmap
 
 - [x] Product scraping
 - [x] PostgreSQL storage
@@ -107,7 +107,7 @@ frontend/
 
 ---
 
-## 👤 Author
+## Author
 
 **Adeoti Israel (Derin)**
 
@@ -117,6 +117,6 @@ GitHub: https://github.com/oluwaisrael
 
 ---
 
-## 📄 License
+##  License
 
 MIT
