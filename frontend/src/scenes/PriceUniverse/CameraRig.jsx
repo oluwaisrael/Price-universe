@@ -75,19 +75,12 @@ function CameraRig({ selectedNode }) {
     const programmaticMotion = isDrifting.current || distanceToGoal > ARRIVE_EPSILON
 
     if (programmaticMotion) {
-      // We own the camera fully right now. OrbitControls must stay
-      // disabled — even calling its update() re-derives camera
-      // position from its own internal spherical state and fights
-      // our lerp, which is what caused the in/out oscillation.
       if (controlsRef.current) controlsRef.current.enabled = false
 
       camera.position.lerp(desiredPosition.current, LERP_SPEED)
       camera.lookAt(desiredTarget.current)
     } else {
-      // Arrived and idle (not drifting): hand control back. Sync
-      // OrbitControls' internal target/state to the camera's actual
-      // current position/orientation first so re-enabling doesn't
-      // cause a jump.
+      
       if (controlsRef.current && !controlsRef.current.enabled) {
         controlsRef.current.target.copy(desiredTarget.current)
         controlsRef.current.update()

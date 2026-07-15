@@ -4,16 +4,7 @@ import { Html } from '@react-three/drei'
 import ProductImage from './ProductImage'
 import styles from './ProductNode.module.css'
 
-/**
- * ProductNode — interaction sphere + billboard + hover card.
- *
- * Hover card (panel 03 in the design reference) shows name, site
- * (colored by marketplace, matching the node/galaxy tint), and
- * price. Lowest/highest price and price-drop frequency from the
- * mockup are NOT included — normalizeProducts() doesn't expose that
- * data yet (no history aggregation on the backend). Revisit once
- * that's available rather than fabricating placeholder numbers here.
- */
+
 const NODE_RADIUS = 0.5
 const HOVER_SCALE = 1.5
 const SELECTED_SCALE = 1.3
@@ -76,7 +67,7 @@ function ProductNode({ node, isSelected, onSelect }) {
         />
       </mesh>
 
-      <ProductImage url={node.image} position={node.position} />
+      <ProductImage url={node.image} position={node.position} color={node.color} />
 
       {showCard && (
         <Html

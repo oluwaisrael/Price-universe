@@ -6,9 +6,7 @@ import ProductList from '../components/product/ProductList'
 import { useProducts } from '../hooks/useProducts'
 import styles from './Dashboard.module.css'
 
-// Phase 3: wired to the live backend via useProducts(). Search is a
-// simple client-side filter on the fetched list for now — swapping to
-// a server-side search/history lookup is a later phase.
+
 function Dashboard() {
   const [search, setSearch] = useState('')
   const { data: products, isLoading, error, refetch } = useProducts()

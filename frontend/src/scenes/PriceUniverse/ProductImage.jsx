@@ -17,7 +17,11 @@ function getResponsiveMaxDim(aspect) {
   return BILLBOARD_MAX_DIM * scale
 }
 
-function Texture({ url }) {
+
+const FRAME_PADDING = 0.16
+const GLOW_PADDING = 0.5
+
+function Texture({ url, frameColor }) {
   const texture = useTexture(url)
   const { size } = useThree()
   const aspectRatio = size.width / size.height
@@ -29,20 +33,55 @@ function Texture({ url }) {
   const planeWidth = imageAspect >= 1 ? maxDim : maxDim * imageAspect
   const planeHeight = imageAspect >= 1 ? maxDim / imageAspect : maxDim
 
+  const frameWidth = planeWidth + FRAME_PADDING * 2
+  const frameHeight = planeHeight + FRAME_PADDING * 2
+  const glowWidth = planeWidth + GLOW_PADDING * 2
+  const glowHeight = planeHeight + GLOW_PADDING * 2
+
   return (
-    <mesh renderOrder={1}>
-      <planeGeometry args={[planeWidth, planeHeight]} />
-      <meshBasicMaterial
-        map={texture}
-        transparent
-        toneMapped={false}
-        depthWrite={false}
-      />
-    </mesh>
+    <group>
+      <mesh renderOrder={-1} position={[0, 0, -0.02]}>
+        <planeGeometry args={[glowWidth, glowHeight]} />
+        <meshBasicMaterial
+          color={frameColor}
+          transparent
+          opacity={0.35}
+          toneMapped={false}
+          depthWrite={false}
+        />
+      </mesh>
+
+      <mesh renderOrder={0} position={[0, 0, -0.01]}>
+        <planeGeometry args={[frameWidth, frameHeight]} />
+        <meshBasicMaterial
+          color={frameColor}
+          transparent
+          opacity={0.9}
+          toneMapped={false}
+          depthWrite={false}
+        />
+      </mesh>
+
+      
+      <mesh renderOrder={0} position={[0, 0, -0.005]}>
+        <planeGeometry args={[planeWidth + FRAME_PADDING * 0.6, planeHeight + FRAME_PADDING * 0.6]} />
+        <meshBasicMaterial color="#05050c" toneMapped={false} depthWrite={false} />
+      </mesh>
+
+      <mesh renderOrder={1}>
+        <planeGeometry args={[planeWidth, planeHeight]} />
+        <meshBasicMaterial
+          map={texture}
+          transparent
+          toneMapped={false}
+          depthWrite={false}
+        />
+      </mesh>
+    </group>
   )
 }
 
-function ProductImage({ url, position }) {
+function ProductImage({ url, position, color = '#ffffff' }) {
   if (!url) return null
 
   const billboardPosition = [
@@ -55,7 +94,7 @@ function ProductImage({ url, position }) {
     <Billboard position={billboardPosition}>
       <ImageErrorBoundary fallback={null}>
         <Suspense fallback={null}>
-          <Texture url={url} />
+          <Texture url={url} frameColor={color} />
         </Suspense>
       </ImageErrorBoundary>
     </Billboard>

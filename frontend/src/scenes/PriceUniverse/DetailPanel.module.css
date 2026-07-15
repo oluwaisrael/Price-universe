@@ -113,8 +113,6 @@
   text-decoration: none;
 }
 
-/* Skeleton placeholders — greyed, non-interactive, signals
-   "coming soon" rather than fabricating data or leaving a gap. */
 .skeletonBlock {
   display: flex;
   flex-direction: column;

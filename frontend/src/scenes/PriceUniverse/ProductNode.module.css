@@ -27,8 +27,7 @@
   font-weight: 700;
 }
 
-/* Hover card — panel 03 style: glass panel, marketplace-colored tag,
-   sits beside the node rather than directly above it. */
+
 .hoverCard {
   display: flex;
   flex-direction: column;
@@ -59,7 +58,7 @@
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  /* color is set inline per-node via node.color (marketplace tint) */
+
 }
 
 .hoverPrice {
