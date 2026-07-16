@@ -26,9 +26,9 @@ async def insert_products(products: list, site: str):
                 url = p.get("url")
                 price = p.get("price")
 
-                last_price = await conn.fetchval(
+                last_product = await conn.fetchrow(
                     """
-                    SELECT price FROM price_history
+                    SELECT id, price, image_url FROM price_history
                     WHERE url = $1 AND site = $2
                     ORDER BY scraped_at DESC
                     LIMIT 1
@@ -36,16 +36,24 @@ async def insert_products(products: list, site: str):
                     url, site,
                 )
 
-                if last_price is not None and last_price == price:
+                # A listing can keep the same price while its image is
+                # discovered on a later scrape. Update the missing image in
+                # place without creating a duplicate history point.
+                if last_product is not None and last_product["price"] == price:
+                    if not last_product["image_url"] and p.get("image"):
+                        await conn.execute(
+                            "UPDATE price_history SET image_url = $1 WHERE id = $2",
+                            p["image"], last_product["id"],
+                        )
                     continue
 
-                if last_price is not None and last_price > price:
-                    drop_abs = float(last_price) - float(price)
-                    drop_pct = (drop_abs / float(last_price)) * 100
+                if last_product is not None and last_product["price"] > price:
+                    drop_abs = float(last_product["price"]) - float(price)
+                    drop_pct = (drop_abs / float(last_product["price"])) * 100
                     if drop_pct >= PRICE_DROP_THRESHOLD_PERCENT or drop_abs >= PRICE_DROP_THRESHOLD_ABSOLUTE:
                         send_price_drop_alert(
                             product_name=p.get("name"),
-                            old_price=last_price,
+                            old_price=last_product["price"],
                             new_price=price,
                             url=url,
                             site=site,
@@ -98,6 +106,32 @@ async def get_latest_products(site: str = None, category: str = None, limit: int
         rows = await conn.fetch(query, *args)
 
     return [dict(r) for r in rows]
+
+async def get_latest_products_missing_images(site: str, limit: int = 100):
+    """Return the latest row for listings that still need an image backfill."""
+    query = """
+        SELECT id, url, site
+        FROM (
+            SELECT DISTINCT ON (url, site)
+                id, url, site, image_url
+            FROM price_history
+            WHERE site = $1
+            ORDER BY url, site, scraped_at DESC
+        ) AS latest
+        WHERE image_url IS NULL OR BTRIM(image_url) = ''
+        LIMIT $2
+    """
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(query, site, limit)
+    return [dict(row) for row in rows]
+
+async def update_product_image(product_id: int, image_url: str):
+    """Attach a recovered image URL to an existing latest product row."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            "UPDATE price_history SET image_url = $1 WHERE id = $2",
+            image_url, product_id,
+        )
 
 
 async def get_product_history(url: str, site: str = None):

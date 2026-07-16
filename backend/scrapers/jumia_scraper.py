@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from typing import List, Dict
 from datetime import datetime
 import logging
+from urllib.parse import urlparse
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
@@ -41,6 +42,19 @@ class JumiaScraper:
         adapter = HTTPAdapter(max_retries=retries)
         self.scraper.mount("https://", adapter)
         self.scraper.mount("http://", adapter)
+
+    @staticmethod
+    def _extract_image_url(product):
+        """Return the real Jumia CDN image instead of a lazy-load placeholder."""
+        for img in product.find_all("img"):
+            for attribute in ("data-src", "data-srcset", "src", "srcset"):
+                value = img.get(attribute)
+                if not value:
+                    continue
+                candidate = value.split(",")[0].strip().split()[0]
+                if urlparse(candidate).hostname in {"ng.jumia.is", "i.jumia.is"}:
+                    return candidate
+        return None
 
     def _extract_name(self, product) -> str:
         """Try multiple selectors in order; log which one worked."""
@@ -124,18 +138,7 @@ class JumiaScraper:
                     seller_tag = product.find("span", class_="seller")
                     seller = seller_tag.text.strip() if seller_tag else "Jumia"
                     
-                    # Extract image URL — Jumia lazy-loads real images into data-src,
-                    # and leaves a blank SVG placeholder in src. Check data-src first.
-                    img_tag = product.find("img")
-                    image_url = None
-                    if img_tag:
-                        image_url = (
-                            img_tag.get("data-src")
-                            or img_tag.get("data-srcset")
-                            or img_tag.get("src")
-                        )
-                        if image_url and "," in image_url:
-                            image_url = image_url.split(",")[0].strip().split(" ")[0]
+                    image_url = self._extract_image_url(product)
 
                     product_data = {
                         "name": name,

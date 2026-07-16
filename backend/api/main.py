@@ -7,7 +7,11 @@ from db.database import (
     insert_products,
     get_latest_products,
     get_product_history,
+    get_latest_products_missing_images,
+    update_product_image,
 )
+from scrapers.jumia_scraper import JumiaScraper
+from scrapers.jiji_scraper import JijiScraper
 
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -91,6 +95,26 @@ async def scrape_jiji(category: str = "mobile-phones", limit: int = 5):
     products = jiji.scrape_category(category, limit)
     await insert_products(products, "Jiji")
     return {"site": "Jiji", "products": products, "count": len(products)}
+
+@app.get("/api/backfill-images/jiji")
+async def backfill_jiji_images(limit: int = 100):
+    """Recover missing Jiji images from their individual listing pages."""
+    missing_products = await get_latest_products_missing_images("Jiji", limit)
+    jiji = JijiScraper()
+    updated = 0
+
+    for product in missing_products:
+        image_url = jiji.fetch_product_image(product["url"])
+        if image_url:
+            await update_product_image(product["id"], image_url)
+            updated += 1
+
+    return {
+        "site": "Jiji",
+        "checked": len(missing_products),
+        "updated": updated,
+        "remaining": len(missing_products) - updated,
+    }
 @app.get("/api/products")
 async def list_products(site: str = None, category: str = None, limit: int = 100):
     """Latest known price for each distinct (url, site) product. Powers the list/table view."""

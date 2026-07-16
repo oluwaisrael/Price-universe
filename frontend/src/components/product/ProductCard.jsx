@@ -33,10 +33,6 @@ function ProductCard({ product }) {
           className={styles.image}
           src={imageUrl}
           alt={name}
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.style.display = 'none'
-          }}
         />
       ) : (
         <div className={styles.imageArea} />

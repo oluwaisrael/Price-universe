@@ -5,6 +5,8 @@ from datetime import datetime
 import logging
 import time
 import random
+import re
+from urllib.parse import urlparse
 
 
 logging.basicConfig(level=logging.INFO)
@@ -14,6 +16,58 @@ class JijiScraper:
     def __init__(self):
         self.base_url = "https://jiji.ng"
         self.scraper = cloudscraper.create_scraper()
+
+    @staticmethod
+    def _is_jiji_image(url):
+        return urlparse(url).hostname == "pictures-nigeria.jijistatic.net"
+
+    @staticmethod
+    def _extract_image_url(item):
+        """Return the first real Jiji CDN image, ignoring lazy placeholders."""
+        for img in item.select("img"):
+            for attribute in ("data-src", "data-srcset", "src", "srcset"):
+                value = img.get(attribute)
+                if not value:
+                    continue
+                # srcset values contain URL/width pairs; use the first URL.
+                candidate = value.split(",")[0].strip().split()[0]
+                if JijiScraper._is_jiji_image(candidate):
+                    return candidate
+        return None
+
+    def fetch_product_image(self, product_url):
+        """Read the canonical image from an individual Jiji listing page."""
+        try:
+            response = self.scraper.get(product_url, timeout=15)
+            response.raise_for_status()
+            soup = BeautifulSoup(response.content, "html.parser")
+
+            for meta in soup.select('meta[property="og:image"], meta[name="twitter:image"]'):
+                candidate = meta.get("content")
+                if candidate and self._is_jiji_image(candidate):
+                    return candidate
+
+            image_url = self._extract_image_url(soup)
+            if image_url:
+                return image_url
+
+            # Jiji can hydrate a listing client-side, leaving the image URL
+            # only in embedded JSON/script data instead of an <img> tag.
+            # Search the raw document for that CDN URL as a final fallback.
+            match = re.search(
+                r'https?:\\?/\\?/pictures-nigeria\.jijistatic\.net/[^"\\\'\\s<]+',
+                response.text,
+            )
+            if match:
+                candidate = match.group(0).replace("\\/", "/")
+                if self._is_jiji_image(candidate):
+                    return candidate
+
+            logger.info("No Jiji image URL found in listing page: %s", product_url)
+            return None
+        except Exception as error:
+            logger.warning("Could not fetch image for %s: %s", product_url, error)
+            return None
 
     def _extract_name(self, item) -> str:
         """
@@ -86,18 +140,9 @@ class JijiScraper:
                     if product_url and not product_url.startswith("http"):
                         product_url = f"{self.base_url}{product_url}"
                     
-                    # Extract image URL — Jumia lazy-loads real images into data-src,
-                    # and leaves a blank SVG placeholder in src. Check data-src first.
-                    img_tag = item.select_one("img")
-                    image_url = None
-                    if img_tag:
-                        image_url = (
-                            img_tag.get("data-src")
-                            or img_tag.get("data-srcset")
-                            or img_tag.get("src")
-                        )
-                        if image_url and "," in image_url:
-                            image_url = image_url.split(",")[0].strip().split(" ")[0]
+                    image_url = self._extract_image_url(item)
+                    if not image_url and product_url:
+                        image_url = self.fetch_product_image(product_url)
 
                     product_data = {
                         "name": name,
