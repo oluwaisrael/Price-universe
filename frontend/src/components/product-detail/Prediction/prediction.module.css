@@ -1,0 +1,100 @@
+.wrapper {
+  width: 100%;
+}
+
+.badgeRow {
+  margin-bottom: 1rem;
+}
+
+.betaBadge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.5rem;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  opacity: 0.7;
+}
+
+.headline {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.trend {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.trend_rising {
+  color: #c62828;
+}
+
+.trend_falling {
+  color: #2e7d32;
+}
+
+.trend_stable {
+  opacity: 0.85;
+}
+
+.confidence {
+  font-size: 0.85rem;
+  opacity: 0.7;
+}
+
+.sparkline {
+  width: 100%;
+  max-width: 240px;
+  height: 60px;
+  display: block;
+  margin-bottom: 1rem;
+}
+
+.sparklineLine {
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.sparklineDot {
+  fill: currentColor;
+}
+
+.summary {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  opacity: 0.85;
+  max-width: 60ch;
+  margin-bottom: 1.25rem;
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+.stat dt {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.stat dd {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0.15rem 0 0;
+}
+
+.changePositive {
+  color: #c62828;
+}
+
+.changeNegative {
+  color: #2e7d32;
+}

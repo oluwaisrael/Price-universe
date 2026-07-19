@@ -1,0 +1,57 @@
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.section {
+  width: 100%;
+}
+
+.sectionTitle {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  opacity: 0.7;
+  margin-bottom: 0.6rem;
+}
+
+.description {
+  font-size: 0.9rem;
+  line-height: 1.55;
+  opacity: 0.85;
+  max-width: 65ch;
+}
+
+.specList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.specRow {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid currentColor;
+  opacity: 1;
+}
+
+.specRow dt {
+  font-size: 0.85rem;
+  opacity: 0.6;
+}
+
+.specRow dd {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
+}
+
+.link {
+  color: currentColor;
+  text-decoration: underline;
+  font-weight: 600;
+}

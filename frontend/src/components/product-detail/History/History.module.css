@@ -1,0 +1,115 @@
+.wrapper {
+  width: 100%;
+}
+
+.message {
+  opacity: 0.7;
+  font-size: 0.9rem;
+  padding: 1.5rem 0;
+}
+
+.controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.rangeGroup {
+  display: flex;
+  gap: 0.25rem;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.rangeButton {
+  background: none;
+  border: none;
+  color: currentColor;
+  opacity: 0.6;
+  font-size: 0.85rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.rangeButton:hover {
+  opacity: 0.9;
+}
+
+.rangeButtonActive {
+  opacity: 1;
+  background-color: currentColor;
+  color: #000; /* inverts against the currentColor fill */
+}
+
+.changeBadge {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+}
+
+.changePositive {
+  color: #2e7d32;
+}
+
+.changeNegative {
+  color: #c62828;
+}
+
+.chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.line {
+  stroke: currentColor;
+  stroke-width: 2;
+}
+
+.markerLow {
+  fill: #2e7d32;
+}
+
+.markerHigh {
+  fill: #c62828;
+}
+
+.markerCurrent {
+  fill: currentColor;
+  stroke: Canvas;
+  stroke-width: 1.5;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dotLow, .dotHigh, .dotCurrent {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dotLow { background-color: #2e7d32; }
+.dotHigh { background-color: #c62828; }
+.dotCurrent { background-color: currentColor; }
