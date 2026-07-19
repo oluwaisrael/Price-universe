@@ -44,9 +44,15 @@ function Prediction({ product }) {
 
   return (
     <div className={styles.wrapper}>
+      {/* CHANGED BLOCK STARTS HERE */}
       <div className={styles.badgeRow}>
-        <span className={styles.betaBadge}>Beta — mocked prediction</span>
+        <div>
+          <h3 className={styles.panelTitle}>AI Price Prediction</h3>
+          <p className={styles.panelSubtitle}>Next 7 days outlook</p>
+        </div>
+        <span className={styles.betaBadge}>Beta — mocked</span>
       </div>
+      {/* CHANGED BLOCK ENDS HERE */}
 
       <div className={styles.headline}>
         <span className={`${styles.trend} ${styles[`trend_${prediction.trend}`]}`}>

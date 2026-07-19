@@ -7,6 +7,7 @@ function Information({ product }) {
 
   return (
     <div className={styles.wrapper}>
+        <h3 className={styles.panelHeading}>Product Information</h3>
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Description</h3>
         <p className={styles.description}>{description}</p>

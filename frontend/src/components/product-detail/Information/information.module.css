@@ -1,4 +1,10 @@
 .wrapper {
+  width: 100%;
+  height: 100%;
+  padding: 1.75rem 2rem;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.1);
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
@@ -9,49 +15,61 @@
 }
 
 .sectionTitle {
-  font-size: 0.9rem;
-  font-weight: 700;
+  font-size: 0.8rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.02em;
-  opacity: 0.7;
+  letter-spacing: 0.04em;
+  opacity: 0.55;
   margin-bottom: 0.6rem;
 }
 
 .description {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.55;
-  opacity: 0.85;
-  max-width: 65ch;
+  opacity: 0.75;
 }
 
 .specList {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.1rem;
 }
 
 .specRow {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid currentColor;
-  opacity: 1;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.specRow:last-child {
+  border-bottom: none;
 }
 
 .specRow dt {
-  font-size: 0.85rem;
-  opacity: 0.6;
+  font-size: 0.8rem;
+  opacity: 0.55;
 }
 
 .specRow dd {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-align: right;
 }
 
 .link {
-  color: currentColor;
-  text-decoration: underline;
+  color: #a78bfa;
+  text-decoration: none;
   font-weight: 600;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.panelHeading {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
 }

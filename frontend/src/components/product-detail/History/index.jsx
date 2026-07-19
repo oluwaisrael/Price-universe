@@ -27,8 +27,6 @@ function formatShortDate(iso) {
   return date.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' })
 }
 
-// Turns a history slice into SVG point coordinates + derived markers.
-// Isolated from render logic so it stays testable/readable on its own.
 function buildChartGeometry(history) {
   const prices = history.map((row) => row.price).filter((p) => typeof p === 'number')
   if (prices.length < 2) return null
@@ -59,12 +57,32 @@ function buildChartGeometry(history) {
   return { points, pathD, lowestPoint, highestPoint, currentPoint, minPrice, maxPrice, changePercent }
 }
 
+// Finds the closest chart point to a mouse x-position, for hover tooltips.
+function findClosestPoint(points, mouseX) {
+  if (!points || points.length === 0) return null
+  return points.reduce((closest, p) => (Math.abs(p.x - mouseX) < Math.abs(closest.x - mouseX) ? p : closest), points[0])
+}
+
 function History({ product }) {
   const [rangeDays, setRangeDays] = useState(30)
+  const [hoverPoint, setHoverPoint] = useState(null)
   const { data, isLoading, error } = useProductHistory(product?.url)
 
   const filtered = useMemo(() => filterHistoryByRange(data, rangeDays), [data, rangeDays])
   const geometry = useMemo(() => buildChartGeometry(filtered), [filtered])
+
+  function handleMouseMove(e) {
+    if (!geometry) return
+    const svg = e.currentTarget
+    const rect = svg.getBoundingClientRect()
+    const scaleX = CHART_WIDTH / rect.width
+    const mouseX = (e.clientX - rect.left) * scaleX
+    setHoverPoint(findClosestPoint(geometry.points, mouseX))
+  }
+
+  function handleMouseLeave() {
+    setHoverPoint(null)
+  }
 
   if (isLoading) {
     return <div className={styles.wrapper}><p className={styles.message}>Loading price history…</p></div>
@@ -77,6 +95,11 @@ function History({ product }) {
   return (
     <div className={styles.wrapper}>
       <div className={styles.controls}>
+        <div className={styles.titleGroup}>
+          <h3 className={styles.panelTitle}>Price History</h3>
+          <p className={styles.panelSubtitle}>Track how the price has changed over time</p>
+        </div>
+
         <div className={styles.rangeGroup} role="group" aria-label="Select time range">
           {RANGES.map((range) => (
             <button
@@ -89,51 +112,87 @@ function History({ product }) {
             </button>
           ))}
         </div>
-
-        {geometry?.changePercent != null && (
-          <span
-            className={`${styles.changeBadge} ${geometry.changePercent >= 0 ? styles.changePositive : styles.changeNegative}`}
-          >
-            {geometry.changePercent >= 0 ? '+' : ''}
-            {geometry.changePercent}% over this range
-          </span>
-        )}
       </div>
 
       {!geometry ? (
         <p className={styles.message}>Not enough data points in this range yet.</p>
       ) : (
         <>
-          <svg
-            className={styles.chart}
-            viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-            preserveAspectRatio="xMidYMid meet"
-            role="img"
-            aria-label="Price history line chart"
-          >
-            <path d={geometry.pathD} className={styles.line} fill="none" />
+          <div className={styles.chartWrapper}>
+            <svg
+              className={styles.chart}
+              viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-label="Price history line chart"
+              onMouseMove={handleMouseMove}
+              onMouseLeave={handleMouseLeave}
+            >
+              <path d={geometry.pathD} className={styles.line} fill="none" />
 
-            {/* Lowest marker */}
-            <circle cx={geometry.lowestPoint.x} cy={geometry.lowestPoint.y} r="4" className={styles.markerLow} />
-            {/* Highest marker */}
-            <circle cx={geometry.highestPoint.x} cy={geometry.highestPoint.y} r="4" className={styles.markerHigh} />
-            {/* Current marker */}
-            <circle cx={geometry.currentPoint.x} cy={geometry.currentPoint.y} r="5" className={styles.markerCurrent} />
-          </svg>
+              <circle cx={geometry.lowestPoint.x} cy={geometry.lowestPoint.y} r="4" className={styles.markerLow} />
+              <circle cx={geometry.highestPoint.x} cy={geometry.highestPoint.y} r="4" className={styles.markerHigh} />
+              <circle cx={geometry.currentPoint.x} cy={geometry.currentPoint.y} r="5" className={styles.markerCurrent} />
 
-          <div className={styles.legend}>
-            <div className={styles.legendItem}>
-              <span className={styles.dotLow} />
-              Lowest: {formatPrice(geometry.lowestPoint.price)} ({formatShortDate(geometry.lowestPoint.scrapedAt)})
+              {hoverPoint && (
+                <>
+                  <line
+                    x1={hoverPoint.x}
+                    y1={PADDING}
+                    x2={hoverPoint.x}
+                    y2={CHART_HEIGHT - PADDING}
+                    className={styles.hoverLine}
+                  />
+                  <circle cx={hoverPoint.x} cy={hoverPoint.y} r="5" className={styles.hoverDot} />
+                </>
+              )}
+            </svg>
+
+            {/* Inline annotation bubbles for lowest/highest, positioned over the SVG using percentage coords */}
+            <div
+              className={styles.bubbleLow}
+              style={{
+                left: `${(geometry.lowestPoint.x / CHART_WIDTH) * 100}%`,
+                top: `${(geometry.lowestPoint.y / CHART_HEIGHT) * 100}%`,
+              }}
+            >
+              Lowest<br />{formatPrice(geometry.lowestPoint.price)}
             </div>
-            <div className={styles.legendItem}>
-              <span className={styles.dotHigh} />
-              Highest: {formatPrice(geometry.highestPoint.price)} ({formatShortDate(geometry.highestPoint.scrapedAt)})
+            <div
+              className={styles.bubbleHigh}
+              style={{
+                left: `${(geometry.highestPoint.x / CHART_WIDTH) * 100}%`,
+                top: `${(geometry.highestPoint.y / CHART_HEIGHT) * 100}%`,
+              }}
+            >
+              Highest<br />{formatPrice(geometry.highestPoint.price)}
             </div>
-            <div className={styles.legendItem}>
-              <span className={styles.dotCurrent} />
-              Current: {formatPrice(geometry.currentPoint.price)}
-            </div>
+
+            {hoverPoint && (
+              <div
+                className={styles.tooltip}
+                style={{
+                  left: `${(hoverPoint.x / CHART_WIDTH) * 100}%`,
+                  top: `${Math.max((hoverPoint.y / CHART_HEIGHT) * 100 - 12, 4)}%`,
+                }}
+              >
+                <span className={styles.tooltipDate}>{formatShortDate(hoverPoint.scrapedAt)}</span>
+                <span className={styles.tooltipPrice}>{formatPrice(hoverPoint.price)}</span>
+              </div>
+            )}
+          </div>
+
+          <div className={styles.footer}>
+            {geometry.changePercent != null && (
+              <span className={styles.changeText}>
+                Price {geometry.changePercent >= 0 ? 'rose' : 'dropped'}{' '}
+                <strong className={geometry.changePercent >= 0 ? styles.changePositive : styles.changeNegative}>
+                  {Math.abs(geometry.changePercent)}%
+                </strong>{' '}
+                in the last {rangeDays} days
+              </span>
+            )}
+            <span className={styles.rangeNote}>Showing data for last {rangeDays} days</span>
           </div>
         </>
       )}

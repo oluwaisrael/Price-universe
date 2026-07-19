@@ -1,41 +1,64 @@
 .wrapper {
   width: 100%;
+  height: 100%;
+  padding: 1.75rem 2rem;
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
 }
 
 .badgeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin-bottom: 1rem;
+}
+
+.panelTitle {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.panelSubtitle {
+  font-size: 0.8rem;
+  opacity: 0.55;
+  margin: 0.2rem 0 0;
 }
 
 .betaBadge {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   text-transform: uppercase;
-  padding: 0.2rem 0.5rem;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  opacity: 0.7;
+  padding: 0.25rem 0.6rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  opacity: 0.6;
 }
 
 .headline {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0.5rem;
 }
 
 .trend {
-  font-size: 1.1rem;
+  font-size: 2.2rem;
   font-weight: 700;
+  line-height: 1;
 }
 
 .trend_rising {
-  color: #c62828;
+  color: #f87171;
 }
 
 .trend_falling {
-  color: #2e7d32;
+  color: #4ade80;
 }
 
 .trend_stable {
@@ -43,32 +66,30 @@
 }
 
 .confidence {
-  font-size: 0.85rem;
-  opacity: 0.7;
+  font-size: 0.8rem;
+  opacity: 0.55;
 }
 
 .sparkline {
   width: 100%;
-  max-width: 240px;
-  height: 60px;
+  height: 100px;
   display: block;
-  margin-bottom: 1rem;
+  margin: 0.75rem 0 1rem;
 }
 
 .sparklineLine {
-  stroke: currentColor;
+  stroke: #4ade80;
   stroke-width: 2;
 }
 
 .sparklineDot {
-  fill: currentColor;
+  fill: #4ade80;
 }
 
 .summary {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.5;
-  opacity: 0.85;
-  max-width: 60ch;
+  opacity: 0.7;
   margin-bottom: 1.25rem;
 }
 
@@ -76,25 +97,28 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+  margin-top: auto;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .stat dt {
-  font-size: 0.75rem;
-  opacity: 0.6;
+  font-size: 0.68rem;
+  opacity: 0.55;
   text-transform: uppercase;
   letter-spacing: 0.02em;
 }
 
 .stat dd {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
-  margin: 0.15rem 0 0;
+  margin: 0.2rem 0 0;
 }
 
 .changePositive {
-  color: #c62828;
+  color: #f87171;
 }
 
 .changeNegative {
-  color: #2e7d32;
+  color: #4ade80;
 }

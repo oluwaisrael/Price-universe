@@ -1,24 +1,15 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { useProducts } from '../../hooks/useProducts'
 import Header from '../../components/product-detail/Header'
-import Tabs from '../../components/product-detail/Tabs'
 import History from '../../components/product-detail/History'
 import Prediction from '../../components/product-detail/Prediction'
 import Information from '../../components/product-detail/Information'
-import styles from './ProductDetail.module.css'
 import SimilarProducts from '../../components/product-detail/SimilarProducts'
+import styles from './ProductDetail.module.css'
 
 // Route param is named :id for a clean URL shape, but its value is
 // the encoded product `url` — product rows have no confirmed id
 // field, and url is already unique and guaranteed present.
-
-const TABS = [
-  { id: 'history', label: 'Price History', Component: History },
-  { id: 'prediction', label: 'AI Prediction', Component: Prediction },
-  { id: 'information', label: 'Information', Component: Information },
-  { id: 'similar', label: 'Similar Products', Component: SimilarProducts },
-]
-
 
 function ProductDetail() {
   const { id } = useParams()
@@ -47,7 +38,14 @@ function ProductDetail() {
 
       <Header product={product} />
 
-      <Tabs tabs={TABS} product={product} />
+      <History product={product} />
+
+      <div className={styles.predictionInfoRow}>
+        <Prediction product={product} />
+        <Information product={product} />
+      </div>
+
+      <SimilarProducts product={product} />
     </div>
   )
 }
