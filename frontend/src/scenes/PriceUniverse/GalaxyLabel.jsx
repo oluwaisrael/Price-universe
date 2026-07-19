@@ -11,8 +11,16 @@ import styles from './GalaxyLabel.module.css'
  * the caller — not hardcoded, so it stays accurate as products are
  * added/removed server-side.
  */
-function GalaxyLabel({ center, site, count, color }) {
-  const position = [center.x, 5.5, center.z]
+function GalaxyLabel({ center, site, count, color, galaxyRadius = 20 }) {
+  // Height now scales with galaxyRadius (was a flat 5.5, tuned back
+  // when GALAXY_RADIUS was 13) — at the larger radius from the
+  // composition pass, a fixed height no longer cleared the top of the
+  // tilted disc, so the label sat inside the star clutter instead of
+  // floating clearly above it like the reference's section-header feel.
+  // Sits above MAX_HEIGHT (4.5, galaxyLayout.js's price-height ceiling)
+  // so it clears the highest product nodes, without floating so high
+  // it looks disconnected from the galaxy below it.
+  const position = [center.x, 6.5, center.z]
 
   return (
     <Billboard position={position}>

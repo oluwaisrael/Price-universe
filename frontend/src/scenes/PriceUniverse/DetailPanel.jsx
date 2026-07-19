@@ -27,8 +27,7 @@ function DetailPanel({ node, onClose }) {
 
   return (
     <aside className={styles.panel}>
-      <button className={styles.closeButton} onClick={onClose} aria-label="Close">
-        x
+      <button className={styles.closeButton} uvonClick={onClose} aria-label="Close">
       </button>
 
       {node.image && (

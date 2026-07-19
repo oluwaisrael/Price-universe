@@ -17,9 +17,9 @@ import { getDiscTiltRadians } from './galaxyLayout'
  * both purely cosmetic per-frame updates on refs, no state/rerenders.
  */
 const RING_RADII_FRACTIONS = [0.3, 0.55, 0.85]
-const RING_THICKNESS = 0.05
+const RING_THICKNESS_FRACTION = 0.025
 const ROTATION_SPEEDS = [0.03, -0.02, 0.015]
-const BASE_OPACITIES = [0.32, 0.26, 0.2]
+const BASE_OPACITIES = [0.45, 0.35, 0.25]
 
 function GalaxyOrbitRings({ center, color, galaxyRadius = 14 }) {
   const materialColor = useMemo(() => new THREE.Color(color), [color])
@@ -51,7 +51,7 @@ function GalaxyOrbitRings({ center, color, galaxyRadius = 14 }) {
         return (
           <mesh key={i} ref={(el) => (ringRefs.current[i] = el)} renderOrder={2}>
             <ringGeometry
-              args={[radius - RING_THICKNESS, radius + RING_THICKNESS, 64]}
+              args={[radius - galaxyRadius * RING_THICKNESS_FRACTION, radius + galaxyRadius * RING_THICKNESS_FRACTION, 64]}
             />
             <meshBasicMaterial
               ref={(el) => (materialRefs.current[i] = el)}
@@ -61,6 +61,7 @@ function GalaxyOrbitRings({ center, color, galaxyRadius = 14 }) {
               side={THREE.DoubleSide}
               depthWrite={false}
               toneMapped={false}
+              blending={THREE.AdditiveBlending}
             />
           </mesh>
         )

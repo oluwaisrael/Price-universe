@@ -6,7 +6,6 @@ import ProductList from '../components/product/ProductList'
 import { useProducts } from '../hooks/useProducts'
 import styles from './Dashboard.module.css'
 
-
 function Dashboard() {
   const [search, setSearch] = useState('')
   const { data: products, isLoading, error, refetch } = useProducts()
@@ -20,7 +19,7 @@ function Dashboard() {
   }, [products, search])
 
   return (
-    <PageShell>
+    <PageShell transparentNav>
       <Hero searchValue={search} onSearchChange={setSearch} />
       <FeatureStrip />
       <section id="products" className={styles.productsSection}>

@@ -1,7 +1,7 @@
 import { Suspense, useState, useMemo, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
-import { EffectComposer, Bloom } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
 import { useProducts } from '../../hooks/useProducts'
 import { normalizeProducts } from './normalizeProducts'
 import { computeGalaxyLayout, getGalaxyCenters, getGalaxyRadius } from './galaxyLayout'
@@ -18,26 +18,11 @@ import styles from './PriceUniverse.module.css'
 
 const SEARCH_DEBOUNCE_MS = 500
 
-// Core colors intentionally match SITE_COLORS in normalizeProducts.js
-// (Jumia orange, Jiji cyan) — kept as a local constant rather than
-// importing normalizeProducts' internal map, since that map is
-// per-node tint logic and this is scene-level galaxy dressing.
 const GALAXY_CORE_COLORS = {
   Jumia: '#ff9900',
   Jiji: '#22e5e5',
 }
 
-/**
- * PriceUniverse — search-to-navigate.
- *
- * searchValue (from Hero's SearchInput, shared with Dashboard's list
- * filter) is debounced and matched against node names. A match
- * drives selectedId through the exact same path a click does, so
- * CameraRig flies to it identically. Search is NOT list-filtering
- * here — the scene always renders all nodes; only the camera moves.
- * Clearing the search (or no match) deselects, flying back to the
- * overview/drift state.
- */
 function PriceUniverse({ searchValue = '' }) {
   const { data: rawProducts, isLoading, error } = useProducts()
   const [selectedId, setSelectedId] = useState(null)
@@ -80,24 +65,16 @@ function PriceUniverse({ searchValue = '' }) {
   return (
     <div className={styles.canvasWrapper}>
       <Canvas
-        camera={{ position: [0, 16, 58], fov: 50, far: 2000 }}
+        camera={{ position: [24, 14, 72], fov: 50, far: 2000 }}
         onPointerMissed={() => setSelectedId(null)}
       >
         <color attach="background" args={['#03030a']} />
-        {/* Fog falloff pushed slightly further out (40->46 near, 180->200
-            far) — denser Stars below combined with the previous fog
-            range made the outer starfield fade a bit too aggressively,
-            flattening the sense of depth the mockup's dense background
-            has. */}
-        <fog attach="fog" args={['#03030a', 46, 200]} />
+        {/* Fog range tightened slightly (46->42 near, 200->170 far) —
+            atmosphere pass wants a stronger, faster falloff into haze
+            so depth reads more dramatically, rather than distant
+            elements staying almost fully visible out to 200 units. */}
+        <fog attach="fog" args={['#03030a', 42, 170]} />
 
-        {/* Cinematic lighting pass: ambientLight kept as the flat base
-            fill (unchanged), hemisphereLight adds a subtle cool-top /
-            warm-bottom gradient so unlit surfaces don't read as flat
-            grey, and a second, dimmer point light gives the scene a
-            soft secondary fill from the opposite side of the main
-            light — without it everything on the far side of a node
-            from the single original point light was fully unlit. */}
         <ambientLight intensity={0.3} />
         <hemisphereLight
           skyColor="#3a4a8f"
@@ -122,7 +99,7 @@ function PriceUniverse({ searchValue = '' }) {
             key={`nebula-${site}`}
             center={center}
             color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
-            radius={galaxyRadius * 0.95}
+            radius={galaxyRadius * 0.65}
           />
         ))}
 
@@ -159,6 +136,7 @@ function PriceUniverse({ searchValue = '' }) {
             site={site}
             count={siteCounts[site] ?? 0}
             color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
+            galaxyRadius={galaxyRadius}
           />
         ))}
 
@@ -182,12 +160,21 @@ function PriceUniverse({ searchValue = '' }) {
         <CameraRig selectedNode={selectedNode} />
 
         <EffectComposer>
+          {/* Bloom softened: intensity 1.4->1.0, threshold 0.15->0.35.
+              Previously nearly everything in-scene contributed some
+              bloom, reading as a uniform soft-focus haze rather than
+              distinct bright things glowing. Raising the threshold
+              means only genuinely bright elements (cores, hovered
+              cards, orbit rings) bloom now, which is what makes bloom
+              read as "cinematic glow" instead of "everything is
+              blurry." */}
           <Bloom
-            intensity={1.4}
-            luminanceThreshold={0.15}
+            intensity={0.55}
+            luminanceThreshold={0.35}
             luminanceSmoothing={0.9}
             mipmapBlur
           />
+          <Vignette eskil={false} offset={0.15} darkness={0.6} />
         </EffectComposer>
       </Canvas>
 

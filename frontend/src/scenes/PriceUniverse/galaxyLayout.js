@@ -18,9 +18,20 @@
  * drives height (y) exactly as before.
  */
 
+// Hero composition pass: both galaxies shifted right and apart so the
+// left ~30-35% of the viewport (where headline/search/nav live) stays
+// visually clear. Jumia moved from a symmetric -28 to a modest +6 —
+// still left-of-center relative to Jiji, but no longer sitting under
+// the text column. Jiji pushed further right (52, up from 28) and
+// back in z (-18) so it reads as more distant, adding depth and
+// letting it partially extend off the right edge of the viewport
+// rather than sitting fully centered, matching the reference's
+// "galaxies breathe, don't feel boxed-in" framing. These numbers are
+// paired with CameraRig's DEFAULT_CAMERA_POSITION/target offset —
+// changing one without the other will throw off the composition.
 const GALAXY_CENTERS = {
-  Jumia: { x: -28, z: 0 },
-  Jiji: { x: 28, z: 0 },
+  Jumia: { x: 14, z: -6 },
+  Jiji: { x: 68, z: -24 },
 }
 const DEFAULT_GALAXY_CENTER = { x: 0, z: 0 }
 
@@ -32,7 +43,7 @@ const MAX_HEIGHT = 4.5
 // and tight so the few points available still trace a legible curve
 // instead of reading as scattered clumps. GALAXY_RADIUS keeps the
 // outermost arm well inside the ~64-unit gap between centers.
-const GALAXY_RADIUS = 13
+const GALAXY_RADIUS = 18
 const CORE_RADIUS = 0.6
 const ARM_COUNT = 2
 // Slightly more wind than before (0.95 -> 1.35) — at under one full

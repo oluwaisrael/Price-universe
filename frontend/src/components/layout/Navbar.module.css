@@ -25,3 +25,12 @@
 .navLink {
   text-decoration: none;
 }
+.navbarTransparent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  border-bottom: none;
+  z-index: 10;
+}

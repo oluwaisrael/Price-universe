@@ -32,14 +32,22 @@ function hashToUnitLocal(str) {
   return (h >>> 0) / 4294967295
 }
 
+// Centered on the galaxy midpoint (matches CameraRig's DEFAULT_TARGET
+// and galaxyLayout's current GALAXY_CENTERS), not world origin — the
+// composition pass moved both galaxies off-origin, and this dust
+// field was still centered on (0,0), hazing up space that's no longer
+// where the action is.
+const AMBIENT_DUST_CENTER_X = 38
+const AMBIENT_DUST_CENTER_Z = -14
+
 function buildAmbientDust() {
   const positions = new Float32Array(AMBIENT_DUST_COUNT * 3)
   const colors = new Float32Array(AMBIENT_DUST_COUNT * 3)
 
   for (let i = 0; i < AMBIENT_DUST_COUNT; i++) {
     const seed = `ambient-dust-${i}`
-    const x = (hashToUnitLocal(`${seed}-x`) - 0.5) * 2 * AMBIENT_DUST_SPREAD_X
-    const z = (hashToUnitLocal(`${seed}-z`) - 0.5) * 2 * AMBIENT_DUST_SPREAD_Z
+    const x = AMBIENT_DUST_CENTER_X + (hashToUnitLocal(`${seed}-x`) - 0.5) * 2 * AMBIENT_DUST_SPREAD_X
+    const z = AMBIENT_DUST_CENTER_Z + (hashToUnitLocal(`${seed}-z`) - 0.5) * 2 * AMBIENT_DUST_SPREAD_Z
     const y = (hashToUnitLocal(`${seed}-y`) - 0.5) * 2 * AMBIENT_DUST_HEIGHT
 
     positions[i * 3] = x
@@ -178,7 +186,7 @@ function GalaxyStarfield() {
           size={0.3}
           vertexColors
           transparent
-          opacity={0.5}
+          opacity={0.3}
           sizeAttenuation
           depthWrite={false}
           toneMapped={false}

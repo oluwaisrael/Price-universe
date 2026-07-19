@@ -2,6 +2,7 @@ import { useRef, useState } from 'react'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import ProductImage from './ProductImage'
+import ProductPedestal from './ProductPedestal'
 import styles from './ProductNode.module.css'
 
 /**
@@ -125,6 +126,10 @@ function ProductNode({ node, isSelected, onSelect }) {
         isHovered={isHovered}
         seed={String(node.id)}
       />
+
+      {isHovered && (
+        <ProductPedestal position={node.position} color={node.color} />
+      )}
 
       {showCard && (
         <Html
