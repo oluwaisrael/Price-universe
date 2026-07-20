@@ -15,6 +15,7 @@ import GalaxyLabel from './GalaxyLabel'
 import CameraRig from './CameraRig'
 import DetailPanel from './DetailPanel'
 import styles from './PriceUniverse.module.css'
+import BackgroundPlanets from './BackgroundPlanets'
 
 const SEARCH_DEBOUNCE_MS = 500
 
@@ -93,8 +94,9 @@ function PriceUniverse({ searchValue = '' }) {
           fade
           speed={0.5}
         />
-
-        {Object.entries(galaxyCenters).map(([site, center]) => (
+        <BackgroundPlanets />
+        
+         {Object.entries(galaxyCenters).map(([site, center]) => (
           <GalaxyNebula
             key={`nebula-${site}`}
             center={center}

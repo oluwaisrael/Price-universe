@@ -13,13 +13,14 @@ function Navbar({ transparent = false }) {
   return (
     <header className={`${styles.navbar} ${transparent ? styles.navbarTransparent : ''}`}>
       <div className={styles.left}>
+        <div className={styles.logoIcon}>✨</div>
         <span className={styles.logo}>Price Intelligence</span>
       </div>
       <nav className={styles.center}>
         <a href="/" className={styles.navLink}>Home</a>
         <a href="#products" className={styles.navLink}>Products</a>
-        <a href="#" className={styles.navLink}>About Derin?</a>
-        <a href="#" className={styles.navLink}>How to use</a>
+        <a href="#" className={styles.navLink}>About</a>
+        <a href="#" className={styles.navLink}>How it works</a>
       </nav>
       <div className={styles.right}>
         <button className={styles.trackButton}>Track a Product</button>

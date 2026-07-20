@@ -1,5 +1,7 @@
 import PriceUniverse from '../../scenes/PriceUniverse/PriceUniverse'
 import SearchInput from '../ui/SearchInput'
+import PopularSearches from './PopularSearches'
+import StatsCards from './StatsCards'
 import styles from './Hero.module.css'
 
 function Hero({ searchValue, onSearchChange }) {
@@ -16,7 +18,15 @@ function Hero({ searchValue, onSearchChange }) {
           Search a product to see its price history and get notified when it drops.
         </p>
         <SearchInput value={searchValue} onChange={onSearchChange} />
+        
+        {/* Popular Searches - Shows when search is empty */}
+        {!searchValue && (
+          <PopularSearches onSearchSelect={onSearchChange} />
+        )}
       </div>
+
+      {/* Stats Cards - Positioned bottom-left */}
+      <StatsCards />
     </section>
   )
 }

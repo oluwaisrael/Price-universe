@@ -1,6 +1,5 @@
 import styles from './FeatureStrip.module.css'
 
-// Icon components for the 4 main features
 function RealtimeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -35,7 +34,6 @@ function BrainIcon() {
   )
 }
 
-// Mini price chart sparkline
 function PriceChartSparkline() {
   return (
     <svg viewBox="0 0 100 40" className={styles.miniChart}>
@@ -56,7 +54,6 @@ function PriceChartSparkline() {
   )
 }
 
-// Mini trending chart
 function TrendingChart() {
   return (
     <svg viewBox="0 0 100 40" className={styles.miniChart}>
