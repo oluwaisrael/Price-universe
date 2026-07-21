@@ -3,16 +3,24 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
 
-const DEFAULT_CAMERA_POSITION = new THREE.Vector3(24, 14, 72)
-const DEFAULT_TARGET = new THREE.Vector3(38, 2, -14)
+// Pulled back and raised from the original (24,14,72)/(38,2,-14) pair —
+// at that distance the orbit rings (radius up to ~15) filled most of
+// the frame edge-to-edge, reading as solid arcs instead of the thin
+// distant threads in the reference mockup. Backing off to a wider,
+// higher vantage lets both galaxies (centers at x:14/z:-6 and
+// x:68/z:-24, radius 18 each) sit fully inside frame with breathing
+// room, matching the "both galaxies visible, generous margin" framing
+// of the reference image.
+const DEFAULT_CAMERA_POSITION = new THREE.Vector3(30, 20, 92)
+const DEFAULT_TARGET = new THREE.Vector3(41, 1, -15)
 const FOCUS_DISTANCE = 5
 const LERP_SPEED = 0.06
 const ARRIVE_EPSILON = 0.15
 
 const IDLE_TIMEOUT = 4000
-const DRIFT_RADIUS = 42
-const DRIFT_HEIGHT = 12
-const DRIFT_SPEED = 0.02
+const DRIFT_RADIUS = 46
+const DRIFT_HEIGHT = 18
+const DRIFT_SPEED = 0.018
 
 const BREATH_HEIGHT_AMPLITUDE = 1.1
 const BREATH_HEIGHT_SPEED = 0.35

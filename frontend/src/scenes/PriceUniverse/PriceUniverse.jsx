@@ -8,7 +8,7 @@ import { computeGalaxyLayout, getGalaxyCenters, getGalaxyRadius } from './galaxy
 import ProductNode from './ProductNode'
 import GalaxyCore from './GalaxyCore'
 import GalaxyStarfield from './GalaxyStarfield'
-import GalaxyNebula from './GalaxyNebula'
+import GalaxyNebula, { AmbientNebula } from './GalaxyNebula'
 import GalaxyOrbitRings from './GalaxyOrbitRings'
 import GalaxyOrbitSatellites from './GalaxyOrbitSatellites'
 import GalaxyLabel from './GalaxyLabel'
@@ -66,7 +66,7 @@ function PriceUniverse({ searchValue = '' }) {
   return (
     <div className={styles.canvasWrapper}>
       <Canvas
-        camera={{ position: [24, 14, 72], fov: 50, far: 2000 }}
+        camera={{ position: [18, 22, 82], fov: 50, far: 2000 }}
         onPointerMissed={() => setSelectedId(null)}
       >
         <color attach="background" args={['#03030a']} />
@@ -95,6 +95,12 @@ function PriceUniverse({ searchValue = '' }) {
           speed={0.5}
         />
         <BackgroundPlanets />
+
+        {/* Ambient haze in open space, unrelated to either galaxy —
+            matches the mockup's soft violet cloud behind the hero
+            text. Positioned left/back of the camera target so it
+            doesn't wash out the galaxies themselves. */}
+        <AmbientNebula position={[-30, 10, -30]} color="#6a4fd9" radius={55} opacity={0.16} />
         
          {Object.entries(galaxyCenters).map(([site, center]) => (
           <GalaxyNebula

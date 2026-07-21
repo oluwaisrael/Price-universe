@@ -74,4 +74,28 @@ function GalaxyNebula({ center, color, radius = 12 }) {
   )
 }
 
+// Ambient nebula — a large, very faint standalone haze sitting in open
+// space independent of either galaxy (mockup shows a soft violet cloud
+// behind the hero text, top-left, not tied to Jumia/Jiji's own tinted
+// glow). Reuses the same gradient-sprite technique as the per-galaxy
+// nebula but at much lower opacity and a cooler, unbranded color so it
+// reads as atmosphere rather than a third galaxy.
+function AmbientNebula({ position, color, radius, opacity = 0.18 }) {
+  const texture = useMemo(() => makeGradientTexture(color), [color])
+
+  return (
+    <sprite position={position} scale={[radius * 2, radius * 2, 1]} renderOrder={-2}>
+      <spriteMaterial
+        map={texture}
+        transparent
+        opacity={opacity}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+        toneMapped={false}
+      />
+    </sprite>
+  )
+}
+
+export { AmbientNebula }
 export default GalaxyNebula
