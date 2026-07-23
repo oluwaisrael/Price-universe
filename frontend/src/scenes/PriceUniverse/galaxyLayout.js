@@ -53,13 +53,25 @@ const MAX_HEIGHT = 4.5
 // count thinner and look emptier, the opposite of the goal.
 const GALAXY_RADIUS = 26
 const CORE_RADIUS = 0.6
-const ARM_COUNT = 2
-// Slightly more wind than before (0.95 -> 1.35) — at under one full
-// turn the two arms barely separated from a straight line near the
-// rim, reading as a fan rather than a spiral. 1.35 turns gives each
-// arm a visible curve while still keeping the two arms distinguishable
-// (higher would start overlapping them into a solid ring).
-const SPIRAL_TURNS = 1.35
+// Matches VISUAL_ARM_COUNT (below) so real product nodes sit on the
+// same arms the dust particles trace — previously this was 2 while
+// dust used 5, meaning products only ever emerged from 2 of the 5
+// visible arms instead of naturally distributing across all of them.
+const ARM_COUNT = 5
+// Visual-only arm count for the decorative dust bands, decoupled from
+// ARM_COUNT above (which must stay 2 — real product positions in
+// spiralPosition() depend on it, and changing it would reshuffle
+// every product's arm assignment). 5 dust arms gives the galaxy a
+// dense multi-arm spiral look while only 2 of those arms carry actual
+// products, matching how real barred/multi-arm spirals aren't
+// uniformly populated across every arm.
+const VISUAL_ARM_COUNT = 5
+// Increased from 1.35 to 2.1 — at the scene's fairly shallow camera
+// pitch, 1.35 turns read mostly as radial scatter/a fan rather than a
+// visible curved arm. More winding makes the pinwheel shape legible
+// from this angle while staying under 2.5 turns so the two arms don't
+// start visually overlapping into a solid ring.
+const SPIRAL_TURNS = 2.1
 // Narrower band off the arm centerline — 0.5 was wide enough that
 // filler stars smeared across neighboring arms instead of tracing a
 // crisp line.
@@ -258,8 +270,8 @@ export function getDiscTiltRadians() {
  * visible curved line. Small hashed jitter is layered on top only to
  * keep the line from looking mechanically perfect.
  */
-const FILLER_STARS_PER_ARM = 320
-const HAZE_POINTS_PER_GALAXY = 130
+const FILLER_STARS_PER_ARM = 950
+const HAZE_POINTS_PER_GALAXY = 260
 
 // Depth (perpendicular-to-disc) variance for filler stars — small
 // additional jitter along the disc's local "thickness" axis so the
@@ -292,8 +304,8 @@ export function generateFillerStars() {
   for (const site of Object.keys(GALAXY_CENTERS)) {
     const center = galaxyCenter(site)
 
-    for (let arm = 0; arm < ARM_COUNT; arm++) {
-      const armOffset = (arm / ARM_COUNT) * Math.PI * 2
+    for (let arm = 0; arm < VISUAL_ARM_COUNT; arm++) {
+      const armOffset = (arm / VISUAL_ARM_COUNT) * Math.PI * 2
 
       for (let i = 0; i < FILLER_STARS_PER_ARM; i++) {
         const seed = `filler-${site}-${arm}-${i}`
@@ -324,12 +336,22 @@ export function generateFillerStars() {
         // viewed at the disc's inclination.
         const depthJitter = (hashToUnit(`${seed}-depth`) - 0.5) * 2 * DEPTH_VARIANCE
 
+        // Density/brightness bulge — peaks around mid-arm (t≈0.45) and
+        // tapers toward both the tight core and the sparse outer rim,
+        // instead of uniform density along the whole length. Combined
+        // with a random per-particle "included" roll below, this is
+        // what produces the varying-density banded look rather than
+        // an evenly-painted line.
+        const densityBulge = Math.sin(t * Math.PI * 0.9 + 0.15) * 0.5 + 0.5
+        const included = hashToUnit(`${seed}-keep`) < 0.35 + densityBulge * 0.65
+        if (!included) continue
+
         stars.push({
           key: seed,
           site,
           kind: 'arm',
           position: [center.x + tilted.x, tilted.y + depthJitter, center.z + tilted.z],
-          scale: 0.35 + hashToUnit(`${seed}-scale`) * 0.85,
+          scale: (0.3 + hashToUnit(`${seed}-scale`) * 0.8) * (0.6 + densityBulge * 0.7),
         })
       }
     }

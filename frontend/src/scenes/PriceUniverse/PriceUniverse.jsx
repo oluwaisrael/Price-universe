@@ -9,7 +9,8 @@ import ProductNode from './ProductNode'
 import GalaxyCore from './GalaxyCore'
 import GalaxyStarfield from './GalaxyStarfield'
 import GalaxyNebula, { AmbientNebula } from './GalaxyNebula'
-import GalaxyOrbitRings from './GalaxyOrbitRings'
+// GalaxyOrbitRings import removed — component no longer used, see
+// note near its former render call.
 import GalaxyOrbitSatellites from './GalaxyOrbitSatellites'
 import GalaxyLabel from './GalaxyLabel'
 import CameraRig from './CameraRig'
@@ -112,14 +113,11 @@ function PriceUniverse({ searchValue = '' }) {
           />
         ))}
 
-        {Object.entries(galaxyCenters).map(([site, center]) => (
-          <GalaxyOrbitRings
-            key={`rings-${site}`}
-            center={center}
-            color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
-            galaxyRadius={galaxyRadius}
-          />
-        ))}
+        {/* GalaxyOrbitRings removed — the reference has no visible
+            orbit paths of any kind (neither circles nor spiral
+            curves). The spiral shape now comes purely from dense
+            particle dust density in GalaxyStarfield, which reads as
+            a continuous luminous band rather than an explicit line. */}
 
         {Object.entries(galaxyCenters).map(([site, center]) => (
           <GalaxyOrbitSatellites

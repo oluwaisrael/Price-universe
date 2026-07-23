@@ -131,10 +131,10 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.42}
+          size={0.52}
           vertexColors
           transparent
-          opacity={0.95}
+          opacity={1}
           sizeAttenuation
           depthWrite={false}
           toneMapped={false}
