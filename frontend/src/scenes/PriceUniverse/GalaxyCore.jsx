@@ -21,19 +21,27 @@ function GalaxyCore({ center, color }) {
   const position = [center.x, 0, center.z]
   const innerGlowRef = useRef()
   const outerGlowRef = useRef()
+  const transitionGlowRef = useRef()
   const lightRef = useRef()
 
   useFrame((state) => {
     const pulse = Math.sin(state.clock.elapsedTime * 0.8) * 0.5 + 0.5 // 0..1
 
     if (innerGlowRef.current) {
-      innerGlowRef.current.opacity = 0.15 + pulse * 0.1
+      innerGlowRef.current.opacity = 0.24 + pulse * 0.14
     }
     if (outerGlowRef.current) {
-      outerGlowRef.current.opacity = 0.06 + pulse * 0.05
+      outerGlowRef.current.opacity = 0.1 + pulse * 0.06
+    }
+    if (transitionGlowRef.current) {
+      transitionGlowRef.current.opacity = 0.05 + pulse * 0.03
     }
     if (lightRef.current) {
-      lightRef.current.intensity = 3.5 + pulse * 1.2
+      // Increased base + pulse range, and distance/decay below widened
+      // so the core's light actually reaches and lifts the brightness
+      // of nearby arm-dust points instead of only affecting geometry
+      // right at the core.
+      lightRef.current.intensity = 5.5 + pulse * 1.8
     }
   })
 
@@ -42,46 +50,62 @@ function GalaxyCore({ center, color }) {
       {/* White-hot innermost point — Bloom will blow this out toward
           pure white, matching the mockup's brilliant core centers. */}
       <mesh>
-        <sphereGeometry args={[0.7, 24, 24]} />
+        <sphereGeometry args={[0.85, 24, 24]} />
         <meshBasicMaterial color="#ffffff" toneMapped={false} />
       </mesh>
 
       <mesh>
-        <sphereGeometry args={[1.8, 32, 32]} />
+        <sphereGeometry args={[2.1, 32, 32]} />
         <meshBasicMaterial color={color} toneMapped={false} />
       </mesh>
 
       {/* Soft outer glow shells — layered, dimmer, additive-feeling via
-          transparency, gives the core a wide halo instead of a hard edge.
-          Radii cut roughly in half from the previous pass (3.6/6 -> 1.6/2.8):
-          at GALAXY_RADIUS=13, a 6-unit glow shell was eating nearly half the
-          disc, which is what made the whole galaxy read as one soft blob
-          instead of a tight bright core with a spiral around it. */}
+          transparency, gives the core a wide halo instead of a hard edge. */}
       <mesh>
-        <sphereGeometry args={[1.6, 24, 24]} />
+        <sphereGeometry args={[1.9, 24, 24]} />
         <meshBasicMaterial
           ref={innerGlowRef}
           color={color}
           toneMapped={false}
           transparent
-          opacity={0.2}
+          opacity={0.24}
           depthWrite={false}
         />
       </mesh>
 
       <mesh>
-        <sphereGeometry args={[2.8, 24, 24]} />
+        <sphereGeometry args={[3.4, 24, 24]} />
         <meshBasicMaterial
           ref={outerGlowRef}
           color={color}
           toneMapped={false}
           transparent
-          opacity={0.08}
+          opacity={0.1}
           depthWrite={false}
         />
       </mesh>
 
-      <pointLight ref={lightRef} color={color} intensity={4} distance={30} decay={2} />
+      {/* New wide transitional glow shell — much larger, very faint,
+          reaching out toward where the core-dust collar begins. This
+          is what softens the core-to-arm handoff so the bright center
+          fades gradually into the surrounding dust instead of
+          stopping abruptly at the outer glow shell's edge. */}
+      <mesh>
+        <sphereGeometry args={[6.5, 20, 20]} />
+        <meshBasicMaterial
+          ref={transitionGlowRef}
+          color={color}
+          toneMapped={false}
+          transparent
+          opacity={0.05}
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* Point light range/intensity increased so the core visibly
+          illuminates the additive dust particles immediately
+          surrounding it, not just contributing to bloom in isolation. */}
+      <pointLight ref={lightRef} color={color} intensity={5.5} distance={42} decay={1.8} />
 
       <Sparkles
         count={90}

@@ -176,8 +176,8 @@ function PriceUniverse({ searchValue = '' }) {
               read as "cinematic glow" instead of "everything is
               blurry." */}
           <Bloom
-            intensity={0.55}
-            luminanceThreshold={0.35}
+            intensity={0.75}
+            luminanceThreshold={0.32}
             luminanceSmoothing={0.9}
             mipmapBlur
           />

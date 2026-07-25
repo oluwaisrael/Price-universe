@@ -57,25 +57,35 @@ const CORE_RADIUS = 0.6
 // same arms the dust particles trace — previously this was 2 while
 // dust used 5, meaning products only ever emerged from 2 of the 5
 // visible arms instead of naturally distributing across all of them.
-const ARM_COUNT = 5
-// Visual-only arm count for the decorative dust bands, decoupled from
-// ARM_COUNT above (which must stay 2 — real product positions in
-// spiralPosition() depend on it, and changing it would reshuffle
-// every product's arm assignment). 5 dust arms gives the galaxy a
-// dense multi-arm spiral look while only 2 of those arms carry actual
-// products, matching how real barred/multi-arm spirals aren't
-// uniformly populated across every arm.
-const VISUAL_ARM_COUNT = 5
+const ARM_COUNT = 6
+// Visual-only arm count for the decorative dust bands. Kept equal to
+// ARM_COUNT (both 6 now) so real product nodes and dust trace the
+// same 6 arms — bumped from 5 to 6 for a slightly denser, more
+// classic grand-design spiral silhouette.
+const VISUAL_ARM_COUNT = 6
 // Increased from 1.35 to 2.1 — at the scene's fairly shallow camera
 // pitch, 1.35 turns read mostly as radial scatter/a fan rather than a
 // visible curved arm. More winding makes the pinwheel shape legible
 // from this angle while staying under 2.5 turns so the two arms don't
 // start visually overlapping into a solid ring.
-const SPIRAL_TURNS = 2.1
+// Reduced from 2.1 to 0.85 — at 5 arms, 2.1 full turns meant each arm
+// wound through 756°, repeatedly looping back near other arms'
+// paths and reading as concentric rings/bands rather than a
+// diverging spiral (confirmed by screenshot: dots still traced
+// visible ring shapes even after switching from lines to particles).
+// Real spiral galaxies read clearly around 0.5-1.2 turns; 0.85 keeps
+// visible curvature while letting arms separate cleanly as radius
+// grows, instead of overlapping.
+const SPIRAL_TURNS = 0.85
 // Narrower band off the arm centerline — 0.5 was wide enough that
 // filler stars smeared across neighboring arms instead of tracing a
 // crisp line.
-const ARM_SCATTER = 0.32
+// Widened from 0.42 — the previous value was tuned for hard 1px dots
+// where a tight line still reads as "an arm." Once rendered as soft
+// glow sprites (larger, blended, semi-transparent), a scatter that
+// narrow left visible dark seams between arms; this width lets
+// neighboring sprites overlap into one continuous luminous band.
+const ARM_SCATTER = 0.68
 const VERTICAL_SCATTER = 0.35 // small y-jitter so the disc isn't perfectly flat
 
 // The default camera sits at a shallow ~15° pitch (see CameraRig's
@@ -128,17 +138,6 @@ function galaxyCenter(site) {
   return GALAXY_CENTERS[site] ?? DEFAULT_GALAXY_CENTER
 }
 
-function priceToHeight(price, minPrice, maxPrice) {
-  if (maxPrice <= minPrice) return (MIN_HEIGHT + MAX_HEIGHT) / 2
-
-  const logMin = Math.log(Math.max(minPrice, 1))
-  const logMax = Math.log(Math.max(maxPrice, 1))
-  const logPrice = Math.log(Math.max(price, 1))
-
-  const t = (logPrice - logMin) / (logMax - logMin)
-  return MIN_HEIGHT + t * (MAX_HEIGHT - MIN_HEIGHT)
-}
-
 /**
  * Places a node on a logarithmic spiral: radius grows smoothly from
  * CORE_RADIUS to GALAXY_RADIUS as t (0–1, hashed from the node id)
@@ -176,7 +175,17 @@ function spiralPosition(id, index, total = 1) {
   // sqrt bias keeps density high near the core and thins toward the
   // rim, matching real spiral galaxies' brightness falloff.
   const radius = CORE_RADIUS + Math.sqrt(tRadius) * (GALAXY_RADIUS - CORE_RADIUS)
-  const angle = armOffset + tRadius * SPIRAL_TURNS * Math.PI * 2
+
+  // True logarithmic spiral: angle grows with ln(radius), not
+  // linearly with t. A linear-in-t angle (the previous approach)
+  // winds fastest near the core, where sqrt(t) radius is still small —
+  // that mismatch is what made 5 arms cross/re-approach each other
+  // repeatedly and read as concentric rings instead of a diverging
+  // spiral. Normalizing ln(radius/CORE) against ln(GALAXY_RADIUS/CORE)
+  // gives a 0..1 progression that matches how real spiral arms wind:
+  // tight near the core, opening out toward the rim.
+  const logProgress = Math.log(radius / CORE_RADIUS) / Math.log(GALAXY_RADIUS / CORE_RADIUS)
+  const angle = armOffset + logProgress * SPIRAL_TURNS * Math.PI * 2
 
   const baseX = Math.cos(angle) * radius
   const baseZ = Math.sin(angle) * radius
@@ -190,9 +199,22 @@ function spiralPosition(id, index, total = 1) {
   const x = baseX + Math.cos(perpAngle) * scatter
   const z = baseZ + Math.sin(perpAngle) * scatter
 
-  const yJitter = (hashToUnit(`${index}-${id}-y`) - 0.5) * 2 * VERTICAL_SCATTER
+  // Small depth-axis jitter (perpendicular to the disc plane, in its
+  // OWN local frame before tilting) — this used to be a raw world-Y
+  // jitter applied after computeGalaxyLayout stacked the price-driven
+  // height on top, which is what produced the flat "horizontal band"
+  // of products: every product's y was dominated by priceToHeight()
+  // on a plain XZ plane, completely ignoring the tilted-disc geometry
+  // every decorative star already uses (tiltDiscPoint in
+  // generateFillerStars/generateCoreDust). Renamed from yJitter to
+  // localDepthJitter and now tilted below alongside x/z so products
+  // land ON the same inclined disc/arm surface as the surrounding
+  // dust, not on a separate flat plane.
+  const localDepthJitter = (hashToUnit(`${index}-${id}-y`) - 0.5) * 2 * VERTICAL_SCATTER
 
-  return { x, z, yJitter }
+  const tilted = tiltDiscPoint(x, localDepthJitter, z)
+
+  return { x: tilted.x, y: tilted.y, z: tilted.z }
 }
 
 export function computeGalaxyLayout(nodes) {
@@ -210,26 +232,31 @@ export function computeGalaxyLayout(nodes) {
 
   return nodes.map((node) => {
     const center = galaxyCenter(node.site)
-    const height = priceToHeight(node.price, minPrice, maxPrice)
     const siteIndex = siteRunningIndex[node.site] ?? 0
     siteRunningIndex[node.site] = siteIndex + 1
-    const { x, z, yJitter } = spiralPosition(node.id, siteIndex, siteCounts[node.site])
+    const { x, y, z } = spiralPosition(node.id, siteIndex, siteCounts[node.site])
 
-    // Same log-normalization as priceToHeight, exposed as a plain 0..1
-    // scalar (not remapped into MIN_HEIGHT..MAX_HEIGHT) so the
-    // rendering layer (ProductNode/ProductImage) can use it for
-    // non-position visuals like card size without re-deriving the
-    // math or importing MIN_HEIGHT/MAX_HEIGHT constants it has no use
-    // for otherwise.
+    // Same log-normalization as before, exposed as a plain 0..1
+    // scalar for card sizing (ProductImage's price-driven scale).
     const priceScale =
       maxPrice <= minPrice
         ? 0.5
         : (Math.log(Math.max(node.price, 1)) - Math.log(Math.max(minPrice, 1))) /
           (Math.log(Math.max(maxPrice, 1)) - Math.log(Math.max(minPrice, 1)))
 
+    // Price now contributes only a SMALL secondary vertical nudge on
+    // top of the tilted-disc position — enough that pricier products
+    // still drift subtly "higher" in the arm's local volume, without
+    // overriding the disc geometry and flattening every product onto
+    // one horizontal plane like the old priceToHeight()-dominated
+    // position did. Scaled by MIN_HEIGHT/MAX_HEIGHT's original range
+    // but heavily compressed (÷4) since it's now additive, not the
+    // sole y source.
+    const priceNudge = MIN_HEIGHT / 4 + priceScale * (MAX_HEIGHT - MIN_HEIGHT) / 4
+
     return {
       ...node,
-      position: [center.x + x, height + yJitter, center.z + z],
+      position: [center.x + x, y + priceNudge, center.z + z],
       priceScale,
     }
   })
@@ -270,8 +297,20 @@ export function getDiscTiltRadians() {
  * visible curved line. Small hashed jitter is layered on top only to
  * keep the line from looking mechanically perfect.
  */
-const FILLER_STARS_PER_ARM = 950
-const HAZE_POINTS_PER_GALAXY = 260
+// Raised from 950 — at 5 (now 6) arms the previous count still left
+// visible gaps between neighboring arms once rendered as soft glow
+// sprites instead of hard dots (sprites need overlap to blend into a
+// continuous band; hard dots could get away with less coverage).
+const FILLER_STARS_PER_ARM = 2800
+const HAZE_POINTS_PER_GALAXY = 300
+// Dense, tight ring hugging the core — distinct from the general
+// "arm" points above. Real spiral galaxies show a bright compact dust
+// lane right around the core before the arms open out; the previous
+// build had CORE_RADIUS=0.6 feeding straight into the sqrt-biased arm
+// radius with no distinct near-core treatment, so the core read as an
+// isolated bright ball with a gap before the first visible arm dust.
+const CORE_DUST_POINTS_PER_GALAXY = 500
+const CORE_DUST_MAX_RADIUS_FRACTION = 0.22
 
 // Depth (perpendicular-to-disc) variance for filler stars — small
 // additional jitter along the disc's local "thickness" axis so the
@@ -298,6 +337,51 @@ export function getSatelliteConfig() {
   return SATELLITE_RINGS
 }
 
+// Box-Muller transform for a deterministic Gaussian sample in [-1, 1]-ish
+// range (actually unbounded, but ~99% falls within ±3 std devs). Two
+// independent hashed uniforms feed one Gaussian value. This replaces
+// the previous uniform (hashToUnit - 0.5) scatter — uniform scatter
+// gives an arm a hard-edged rectangular cross-section (every offset
+// equally likely), which is what made arms look like flat ribbons/
+// mathematical lines. A Gaussian profile concentrates stars near the
+// arm's centerline and thins smoothly toward the edges, which is what
+// actually reads as a soft, volumetric "arm" rather than a stroked
+// path.
+function gaussianFromSeed(seed) {
+  const u1 = Math.max(hashToUnit(`${seed}-g1`), 1e-6)
+  const u2 = hashToUnit(`${seed}-g2`)
+  return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
+}
+
+// Secondary inter-arm dust: sparse, dim, randomly-scattered points
+// filling the space BETWEEN primary arms (unlike the arm points,
+// which hug a single spiral curve). Same total star budget class as
+// the arm dust but far fewer, low-opacity — this is what kills the
+// "obviously empty gap between two clean lines" look without adding
+// any new arms or increasing overall galaxy size.
+const INTERARM_DUST_POINTS_PER_GALAXY = 3600
+
+// Faint outer halo — a sparse, roughly-spherical (not disc-flat) shell
+// of very dim points surrounding the whole galaxy, well past
+// GALAXY_RADIUS. Real spiral galaxies sit inside a diffuse stellar
+// halo; this is a separate, lower-density layer from the disc-hugging
+// HAZE_POINTS_PER_GALAXY above (which stays close to the disc plane).
+const HALO_POINTS_PER_GALAXY = 1300
+const HALO_MIN_RADIUS_FRACTION = 1.0
+const HALO_MAX_RADIUS_FRACTION = 1.7
+
+// Diffuse stellar disc — a very large population of tiny, extremely
+// dim stars spread across the ENTIRE galaxy (core to rim, all angles,
+// not arm-hugging like the arm dust and not restricted like the
+// inter-arm layer's slightly-elevated brightness). This is what makes
+// the whole disc glow as one continuous mass rather than the arms
+// reading as separate bright ribbons floating over black space.
+// Deliberately the largest single population and deliberately the
+// dimmest — bulk coverage, near-invisible individually, additive in
+// aggregate.
+const DIFFUSE_DISC_POINTS_PER_GALAXY = 6000
+
+
 export function generateFillerStars() {
   const stars = []
 
@@ -306,44 +390,88 @@ export function generateFillerStars() {
 
     for (let arm = 0; arm < VISUAL_ARM_COUNT; arm++) {
       const armOffset = (arm / VISUAL_ARM_COUNT) * Math.PI * 2
+      // Small per-arm angular jitter so arms aren't perfectly,
+      // mechanically evenly spaced — real multi-arm spirals are close
+      // to but not exactly even.
+      const armOffsetJitter = (hashToUnit(`armjit-${site}-${arm}`) - 0.5) * 0.35
+      const finalArmOffset = armOffset + armOffsetJitter
+
+      // Per-arm "gap" zones: t-ranges along this arm where density is
+      // deliberately suppressed, so the arm reads as patchy rather
+      // than a mathematically uniform, unbroken stroke.
+      const gapCenters = [
+        0.2 + hashToUnit(`gap0-${site}-${arm}`) * 0.25,
+        0.55 + hashToUnit(`gap1-${site}-${arm}`) * 0.3,
+      ]
+      const gapWidth = 0.06
 
       for (let i = 0; i < FILLER_STARS_PER_ARM; i++) {
         const seed = `filler-${site}-${arm}-${i}`
-        // Sequential t (0→1 along the arm), NOT hashed — this is what
-        // makes the arm trace a continuous curve instead of scatter.
         const t = i / (FILLER_STARS_PER_ARM - 1)
 
-        const radius = CORE_RADIUS + Math.sqrt(t) * (GALAXY_RADIUS - CORE_RADIUS)
-        const angle = armOffset + t * SPIRAL_TURNS * Math.PI * 2
+        // Exponential radial bias (t^2.2, was sqrt(t)): sqrt(t) grows
+        // fast then flattens, which actually biases toward the OUTER
+        // radius. Squaring t biases toward the core instead — slow
+        // growth near t=0, accelerating outward — concentrating far
+        // more stars near the galactic center and thinning gradually
+        // toward the rim, matching real spiral brightness falloff.
+        const radiusT = Math.pow(t, 2.2)
+        const radius = CORE_RADIUS + radiusT * (GALAXY_RADIUS - CORE_RADIUS)
 
-        const baseX = Math.cos(angle) * radius
-        const baseZ = Math.sin(angle) * radius
+        const logProgress = Math.log(radius / CORE_RADIUS) / Math.log(GALAXY_RADIUS / CORE_RADIUS)
+        const angle = finalArmOffset + logProgress * SPIRAL_TURNS * Math.PI * 2
 
-        // Tight perpendicular jitter only — keeps stars ON the arm
-        // line rather than smeared across the whole disc. Scatter
-        // width narrows near the core, widens slightly toward the rim.
-        const scatterAmount = ARM_SCATTER * (0.5 + 0.9 * t)
-        const perpAngle = angle + Math.PI / 2
-        const scatter = (hashToUnit(`${seed}-s`) - 0.5) * 2 * scatterAmount
+        // Occasional small branch: stars past the arm's midpoint
+        // occasionally peel off at a slightly different angle,
+        // mimicking a minor spur rather than every star tracing one
+        // perfect curve.
+        const isBranch = t > 0.4 && hashToUnit(`${seed}-branch`) < 0.08
+        const branchAngle = isBranch
+          ? angle + (hashToUnit(`${seed}-branchdir`) - 0.5) * 0.6
+          : angle
+
+        const baseX = Math.cos(branchAngle) * radius
+        const baseZ = Math.sin(branchAngle) * radius
+
+        // Gaussian perpendicular scatter (was uniform hashToUnit-0.5):
+        // dense at the arm centerline, soft-edged falloff, instead of
+        // a hard-edged uniform band — this is what makes an arm read
+        // as a volumetric band of stars rather than a stroked line.
+        // Blended wider near the core (coreBlend) so the core melts
+        // smoothly into the first section of the arm instead of the
+        // arm starting abruptly at CORE_RADIUS.
+        //
+        // Width growth uses `t` directly (near-linear), NOT radiusT
+        // (t^2.2, the density-shaping curve) — radiusT barely moves
+        // until late t, so tying width to it kept arms looking like
+        // thin lines through most of their length and only fattening
+        // right at the tip. A separate, more linear widen curve makes
+        // the arm visibly thicken through the whole outer half, while
+        // the spiral's angle/radius placement itself is untouched.
+        const coreBlend = 1 - Math.min(t / 0.15, 1)
+        const widthT = 0.4 + 0.9 * t + 0.35 * t * t
+        const scatterAmount = ARM_SCATTER * widthT * (1 + coreBlend * 1.8)
+        const perpAngle = branchAngle + Math.PI / 2
+        const gaussian = gaussianFromSeed(seed)
+        const scatter = gaussian * scatterAmount * 0.5
 
         const x = baseX + Math.cos(perpAngle) * scatter
         const z = baseZ + Math.sin(perpAngle) * scatter
         const yJitter = (hashToUnit(`${seed}-y`) - 0.5) * 2 * VERTICAL_SCATTER * 0.7
 
         const tilted = tiltDiscPoint(x, yJitter, z)
-        // Small extra depth jitter applied after tilting, in world Y —
-        // keeps the band from looking like a flat painted plane once
-        // viewed at the disc's inclination.
         const depthJitter = (hashToUnit(`${seed}-depth`) - 0.5) * 2 * DEPTH_VARIANCE
 
-        // Density/brightness bulge — peaks around mid-arm (t≈0.45) and
-        // tapers toward both the tight core and the sparse outer rim,
-        // instead of uniform density along the whole length. Combined
-        // with a random per-particle "included" roll below, this is
-        // what produces the varying-density banded look rather than
-        // an evenly-painted line.
+        // Density bulge (mid-arm brighter than the tips), combined
+        // with explicit gap suppression — a star drops out either
+        // from natural sparse tail/rim falloff or from landing inside
+        // one of this arm's gap zones. Both fold into one
+        // probabilistic check so gaps read as organic thinning.
         const densityBulge = Math.sin(t * Math.PI * 0.9 + 0.15) * 0.5 + 0.5
-        const included = hashToUnit(`${seed}-keep`) < 0.35 + densityBulge * 0.65
+        const nearGap = gapCenters.some((gc) => Math.abs(t - gc) < gapWidth)
+        const gapSuppression = nearGap ? 0.35 : 1
+        const keepThreshold = (0.3 + densityBulge * 0.7) * gapSuppression
+        const included = hashToUnit(`${seed}-keep`) < keepThreshold
         if (!included) continue
 
         stars.push({
@@ -351,9 +479,70 @@ export function generateFillerStars() {
           site,
           kind: 'arm',
           position: [center.x + tilted.x, tilted.y + depthJitter, center.z + tilted.z],
-          scale: (0.3 + hashToUnit(`${seed}-scale`) * 0.8) * (0.6 + densityBulge * 0.7),
+          // Power-curve bias (hash^2.5) skews most stars toward the
+          // small end of the range, with only occasional larger ones —
+          // matches the reference's countless tiny stars rather than
+          // a field of uniformly medium/large glowing dots.
+          scale: (0.18 + Math.pow(hashToUnit(`${seed}-scale`), 2.5) * 0.9) * (0.6 + densityBulge * 0.7),
         })
       }
+    }
+
+    // Secondary inter-arm dust — sparse, dim points scattered across
+    // the full disc (not confined to any arm curve), same
+    // exponential core-weighted radial bias so density still falls
+    // off toward the rim. Fills the visible gaps between primary arms
+    // instead of leaving flat black space, without adding new arms or
+    // increasing overall galaxy size.
+    for (let i = 0; i < INTERARM_DUST_POINTS_PER_GALAXY; i++) {
+      const seed = `interarm-${site}-${i}`
+      const angle = hashToUnit(`${seed}-a`) * Math.PI * 2
+      const radiusT = Math.pow(hashToUnit(`${seed}-r`), 1.6)
+      const radius = CORE_RADIUS + radiusT * (GALAXY_RADIUS - CORE_RADIUS)
+      const yJitter = (hashToUnit(`${seed}-y`) - 0.5) * 2 * VERTICAL_SCATTER * 0.9
+
+      const tilted = tiltDiscPoint(Math.cos(angle) * radius, yJitter, Math.sin(angle) * radius)
+      const depthJitter = (hashToUnit(`${seed}-depth`) - 0.5) * 2 * DEPTH_VARIANCE
+
+      stars.push({
+        key: seed,
+        site,
+        kind: 'interarm',
+        position: [center.x + tilted.x, tilted.y + depthJitter, center.z + tilted.z],
+        scale: 0.2 + hashToUnit(`${seed}-scale`) * 0.4,
+      })
+    }
+
+    // Diffuse stellar disc — large population of tiny, very dim
+    // points covering the WHOLE disc uniformly by area (radius^2
+    // sampling, not exponential/core-weighted like the arm/interarm
+    // layers), so it reads as ambient fill rather than tracing any
+    // structure of its own. This is the layer that turns "bright arms
+    // over black space" into "one continuous glowing disc with
+    // brighter arms standing out on top of it."
+    for (let i = 0; i < DIFFUSE_DISC_POINTS_PER_GALAXY; i++) {
+      const seed = `diffuse-${site}-${i}`
+      const angle = hashToUnit(`${seed}-a`) * Math.PI * 2
+      // sqrt(hash) gives uniform-by-AREA sampling across the disc
+      // (flat density per unit area), as opposed to the arm/interarm
+      // layers' core-weighted bias — this layer's job is even
+      // baseline coverage, not shaping brightness falloff.
+      const radius = CORE_RADIUS + Math.sqrt(hashToUnit(`${seed}-r`)) * (GALAXY_RADIUS - CORE_RADIUS)
+      const yJitter = (hashToUnit(`${seed}-y`) - 0.5) * 2 * VERTICAL_SCATTER * 0.8
+
+      const tilted = tiltDiscPoint(Math.cos(angle) * radius, yJitter, Math.sin(angle) * radius)
+      const depthJitter = (hashToUnit(`${seed}-depth`) - 0.5) * 2 * DEPTH_VARIANCE
+
+      stars.push({
+        key: seed,
+        site,
+        kind: 'diffuse',
+        position: [center.x + tilted.x, tilted.y + depthJitter, center.z + tilted.z],
+        // Skewed hard toward tiny — this layer is meant to be
+        // countless near-invisible points, not a secondary
+        // medium-brightness structure.
+        scale: 0.12 + Math.pow(hashToUnit(`${seed}-scale`), 3) * 0.35,
+      })
     }
 
     // Soft nebula haze: a looser, more randomly-scattered halo around
@@ -386,9 +575,73 @@ export function generateFillerStars() {
         scale: 0.6 + hashToUnit(`${seed}-scale`) * 1.4,
       })
     }
+
+    // Faint spherical-ish outer halo — sparse points well past the
+    // disc's own radius, with wide untilted vertical spread (halos
+    // aren't flat like the disc) so the galaxy sits inside a diffuse
+    // stellar envelope rather than ending abruptly at the disc edge.
+    for (let i = 0; i < HALO_POINTS_PER_GALAXY; i++) {
+      const seed = `halo-${site}-${i}`
+      const angle = hashToUnit(`${seed}-a`) * Math.PI * 2
+      const radiusFrac =
+        HALO_MIN_RADIUS_FRACTION +
+        hashToUnit(`${seed}-r`) * (HALO_MAX_RADIUS_FRACTION - HALO_MIN_RADIUS_FRACTION)
+      const radius = GALAXY_RADIUS * radiusFrac
+      const height = (hashToUnit(`${seed}-y`) - 0.5) * 2 * GALAXY_RADIUS * 0.35
+
+      stars.push({
+        key: seed,
+        site,
+        kind: 'halo',
+        position: [
+          center.x + Math.cos(angle) * radius,
+          height,
+          center.z + Math.sin(angle) * radius,
+        ],
+        scale: 0.3 + hashToUnit(`${seed}-scale`) * 0.5,
+      })
+    }
   }
 
   return stars
+}
+
+/**
+ * Dense compact dust ring hugging each galaxy's core (radius up to
+ * CORE_DUST_MAX_RADIUS_FRACTION * GALAXY_RADIUS). Distinct from the
+ * arm/haze points above: no arm structure, just tight, bright,
+ * randomly-scattered points concentrated close to center so the core
+ * transitions into the spiral through a dense dust collar rather than
+ * a bare gap. Rendered by GalaxyStarfield as its own brighter, denser
+ * point layer.
+ */
+export function generateCoreDust() {
+  const points = []
+
+  for (const site of Object.keys(GALAXY_CENTERS)) {
+    const center = galaxyCenter(site)
+    const maxR = GALAXY_RADIUS * CORE_DUST_MAX_RADIUS_FRACTION
+
+    for (let i = 0; i < CORE_DUST_POINTS_PER_GALAXY; i++) {
+      const seed = `coredust-${site}-${i}`
+      const angle = hashToUnit(`${seed}-a`) * Math.PI * 2
+      // sqrt bias concentrates points near the core, thinning toward
+      // the outer edge of the dust collar.
+      const radius = CORE_RADIUS + Math.sqrt(hashToUnit(`${seed}-r`)) * (maxR - CORE_RADIUS)
+      const height = (hashToUnit(`${seed}-y`) - 0.5) * 2 * VERTICAL_SCATTER * 0.5
+
+      const tilted = tiltDiscPoint(Math.cos(angle) * radius, height, Math.sin(angle) * radius)
+
+      points.push({
+        key: seed,
+        site,
+        position: [center.x + tilted.x, tilted.y, center.z + tilted.z],
+        scale: 0.4 + hashToUnit(`${seed}-scale`) * 0.9,
+      })
+    }
+  }
+
+  return points
 }
 
 // Metadata for the galaxy name/count labels rendered in the scene
