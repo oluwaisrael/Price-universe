@@ -10,14 +10,13 @@ const FORWARD_OFFSET = NODE_RADIUS + 0.4
 const NARROW_ASPECT_BREAKPOINT = 0.7
 const MIN_SCALE = 0.45
 
-// Price-driven sizing: higher-priced products render as a visibly
-// larger card, within a modest range so cheap items never disappear
-// and expensive ones never dominate the scene. priceScale is a plain
-// 0..1 already computed by ProductNode from the node's price relative
-// to that galaxy's min/max — this file just maps it onto a visual
-// multiplier.
-const MIN_PRICE_SCALE = 0.78
-const MAX_PRICE_SCALE = 1.3
+// Price-driven sizing: wider range than before (was 0.78–1.30) so
+// cheap products are noticeably smaller and premium ones clearly
+// dominant. An additional per-card random multiplier (0.75–1.25,
+// applied in the component) further breaks uniform sizing so even
+// same-price products vary visibly in apparent size.
+const MIN_PRICE_SCALE = 0.55
+const MAX_PRICE_SCALE = 1.85
 
 // Small deterministic per-node jitter — a slight in-plane rotation and
 // a small extra forward/lateral offset — so cards at similar spiral
@@ -233,7 +232,7 @@ function FallbackCard({ frameColor, planeWidth, planeHeight, isHovered, initial 
   )
 }
 
-function ProductImage({ url, position, color = '#ffffff', name = '', priceScale = 0.5, isHovered = false, seed = '' }) {
+function ProductImage({ url, position, color = '#ffffff', name = '', priceScale = 0.5, visualScale = 1.0, isHovered = false, seed = '' }) {
   const jitterSeed = seed || url || name || '0,0,0'.concat(position.join(','))
 
   // Deterministic per-node variance: a small in-plane rotation (so
@@ -269,10 +268,20 @@ function ProductImage({ url, position, color = '#ffffff', name = '', priceScale 
   // aspect-correct plane dims inside Texture and get this same
   // multiplier applied via the group scale below, so both the real
   // image and fallback card size consistently with price.
-  const sizeMultiplier = useMemo(
-    () => MIN_PRICE_SCALE + priceScale * (MAX_PRICE_SCALE - MIN_PRICE_SCALE),
-    [priceScale]
-  )
+  // Additional per-card random multiplier (seeded from `seed` prop for
+  // stability) so two cards at the same price tier still have clearly
+  // different apparent sizes — avoids the uniform-sizing look per #6.
+  const sizeMultiplier = useMemo(() => {
+    // visualScale carries the wide-range 55%/30%/15% tiered size
+    // distribution from computeGalaxyLayout (small 0.55–0.9,
+    // medium 0.85–1.35, large accent 1.3–2.1). Multiplying it by
+    // the base price-driven scale here means both axes of variation
+    // (price and explicit size tier) compound rather than fighting
+    // each other — a high-priced large-tier card is noticeably
+    // bigger than a low-priced small-tier card.
+    const baseScale = MIN_PRICE_SCALE + priceScale * (MAX_PRICE_SCALE - MIN_PRICE_SCALE)
+    return baseScale * visualScale
+  }, [priceScale, visualScale, seed])
 
   const initial = (name?.trim?.()[0] ?? '?').toUpperCase()
 

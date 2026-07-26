@@ -176,41 +176,53 @@ function spiralPosition(id, index, total = 1) {
   // rim, matching real spiral galaxies' brightness falloff.
   const radius = CORE_RADIUS + Math.sqrt(tRadius) * (GALAXY_RADIUS - CORE_RADIUS)
 
-  // True logarithmic spiral: angle grows with ln(radius), not
-  // linearly with t. A linear-in-t angle (the previous approach)
-  // winds fastest near the core, where sqrt(t) radius is still small —
-  // that mismatch is what made 5 arms cross/re-approach each other
-  // repeatedly and read as concentric rings instead of a diverging
-  // spiral. Normalizing ln(radius/CORE) against ln(GALAXY_RADIUS/CORE)
-  // gives a 0..1 progression that matches how real spiral arms wind:
-  // tight near the core, opening out toward the rim.
   const logProgress = Math.log(radius / CORE_RADIUS) / Math.log(GALAXY_RADIUS / CORE_RADIUS)
-  const angle = armOffset + logProgress * SPIRAL_TURNS * Math.PI * 2
 
-  const baseX = Math.cos(angle) * radius
-  const baseZ = Math.sin(angle) * radius
+  // Local clustering: products with nearby indices get a shared group
+  // offset that pulls them toward the same region. Groups of ~4-7
+  // products will naturally cluster together in dense star regions
+  // rather than being evenly spaced around the arms. The group offset
+  // is hashed from the group ID, not the individual index, so all
+  // members of a group share the same bias vector.
+  const groupSize = 5
+  const groupId = Math.floor(index / groupSize)
+  const groupAngleBias = (hashToUnit(`${id}-grp-${groupId}-a`) - 0.5) * 1.4
+  const groupRadialBias = (hashToUnit(`${id}-grp-${groupId}-r`) - 0.5) * GALAXY_RADIUS * 0.12
 
-  // Perpendicular scatter (across the arm) shrinks near the core so
-  // the center reads as a tight, bright cluster rather than a blob.
-  const scatterAmount = ARM_SCATTER * (0.3 + 0.7 * tRadius)
+  // Individual angular jitter ON TOP of the group bias — members
+  // within the same group spread slightly around their shared anchor
+  // so the cluster feels organic, not stacked on a single point.
+  const angleJitter = (hashToUnit(`${index}-${id}-angjit`) - 0.5) * 1.1
+  const angle = armOffset + logProgress * SPIRAL_TURNS * Math.PI * 2 + groupAngleBias + angleJitter
+
+  const baseX = Math.cos(angle) * (radius + groupRadialBias)
+  const baseZ = Math.sin(angle) * (radius + groupRadialBias)
+
+  // Wide Gaussian scatter so products spread naturally through the
+  // galaxy volume — not on a single arm spline. Overlap allowed:
+  // the scatterAmount is intentionally large enough that products
+  // from adjacent arms can land near each other, exactly like stars
+  // embedded in an arm's local volume rather than evenly attached
+  // to a visible curve.
+  const productGaussian = gaussianFromSeed(`${index}-${id}-pscatter`)
+  const scatterAmount = ARM_SCATTER * (1.8 + 2.8 * tRadius)
   const perpAngle = angle + Math.PI / 2
-  const scatter = (hashToUnit(`${index}-${id}-s`) - 0.5) * 2 * scatterAmount
+  const scatter = productGaussian * scatterAmount * 0.65
 
-  const x = baseX + Math.cos(perpAngle) * scatter
-  const z = baseZ + Math.sin(perpAngle) * scatter
+  // Larger radial jitter than previous pass — products can land
+  // noticeably inside or outside their nominal arm radius, which is
+  // what breaks the "products attached to the arm spline" look.
+  const radialJitter = (hashToUnit(`${index}-${id}-rjit`) - 0.5) * 2 * (GALAXY_RADIUS * 0.07)
 
-  // Small depth-axis jitter (perpendicular to the disc plane, in its
-  // OWN local frame before tilting) — this used to be a raw world-Y
-  // jitter applied after computeGalaxyLayout stacked the price-driven
-  // height on top, which is what produced the flat "horizontal band"
-  // of products: every product's y was dominated by priceToHeight()
-  // on a plain XZ plane, completely ignoring the tilted-disc geometry
-  // every decorative star already uses (tiltDiscPoint in
-  // generateFillerStars/generateCoreDust). Renamed from yJitter to
-  // localDepthJitter and now tilted below alongside x/z so products
-  // land ON the same inclined disc/arm surface as the surrounding
-  // dust, not on a separate flat plane.
-  const localDepthJitter = (hashToUnit(`${index}-${id}-y`) - 0.5) * 2 * VERTICAL_SCATTER
+  const x = baseX + Math.cos(perpAngle) * scatter + Math.cos(angle) * radialJitter
+  const z = baseZ + Math.sin(perpAngle) * scatter + Math.sin(angle) * radialJitter
+
+  // Aggressive Z (disc-thickness) depth for 3D embeddedness — products
+  // should feel scattered through the disc volume, some partially
+  // behind bloom/dust. 3.5× VERTICAL_SCATTER (was 2.6×) pushes more
+  // products clearly above/below the disc midplane so they visually
+  // layer with the surrounding stars instead of all sitting on one plane.
+  const localDepthJitter = (hashToUnit(`${index}-${id}-y`) - 0.5) * 2 * VERTICAL_SCATTER * 3.5
 
   const tilted = tiltDiscPoint(x, localDepthJitter, z)
 
@@ -244,6 +256,26 @@ export function computeGalaxyLayout(nodes) {
         : (Math.log(Math.max(node.price, 1)) - Math.log(Math.max(minPrice, 1))) /
           (Math.log(Math.max(maxPrice, 1)) - Math.log(Math.max(minPrice, 1)))
 
+    // Wide-range visual scale multiplier — combines price tier with a
+    // random component so products vary dramatically in apparent size.
+    // priceScale alone clusters everything near the middle (0.4–0.7)
+    // when the price spread is modest; this explicit tiered roll
+    // guarantees some products are 2× bigger than others, which is
+    // what makes the galaxy look inhabited by varied-prominence
+    // objects rather than a grid of same-size cards.
+    const sizeRoll = hashToUnit(`${node.id}-visscale`)
+    let visualScale
+    if (sizeRoll < 0.55) {
+      // Small — majority of products
+      visualScale = 0.55 + priceScale * 0.2 + hashToUnit(`${node.id}-sv`) * 0.15
+    } else if (sizeRoll < 0.85) {
+      // Medium
+      visualScale = 0.85 + priceScale * 0.3 + hashToUnit(`${node.id}-sv`) * 0.2
+    } else {
+      // Large accent — rare, clearly stands out
+      visualScale = 1.3 + priceScale * 0.5 + hashToUnit(`${node.id}-sv`) * 0.3
+    }
+
     // Price now contributes only a SMALL secondary vertical nudge on
     // top of the tilted-disc position — enough that pricier products
     // still drift subtly "higher" in the arm's local volume, without
@@ -258,6 +290,7 @@ export function computeGalaxyLayout(nodes) {
       ...node,
       position: [center.x + x, y + priceNudge, center.z + z],
       priceScale,
+      visualScale,
     }
   })
 }
@@ -301,24 +334,11 @@ export function getDiscTiltRadians() {
 // visible gaps between neighboring arms once rendered as soft glow
 // sprites instead of hard dots (sprites need overlap to blend into a
 // continuous band; hard dots could get away with less coverage).
-const FILLER_STARS_PER_ARM = 2800
-const HAZE_POINTS_PER_GALAXY = 300
-// Dense, tight ring hugging the core — distinct from the general
-// "arm" points above. Real spiral galaxies show a bright compact dust
-// lane right around the core before the arms open out; the previous
-// build had CORE_RADIUS=0.6 feeding straight into the sqrt-biased arm
-// radius with no distinct near-core treatment, so the core read as an
-// isolated bright ball with a gap before the first visible arm dust.
-const CORE_DUST_POINTS_PER_GALAXY = 500
+const FILLER_STARS_PER_ARM = 3800
+const HAZE_POINTS_PER_GALAXY = 500
+const CORE_DUST_POINTS_PER_GALAXY = 1800
 const CORE_DUST_MAX_RADIUS_FRACTION = 0.22
-
-// Depth (perpendicular-to-disc) variance for filler stars — small
-// additional jitter along the disc's local "thickness" axis so the
-// spiral reads as a slightly puffy 3D band rather than a perfectly
-// flat painted plane once tilted. Applied post-tilt, in the same
-// local space as VERTICAL_SCATTER, so it doesn't disturb the tilt
-// math above.
-const DEPTH_VARIANCE = 0.22
+const DEPTH_VARIANCE = 0.28
 
 // Orbiting "satellite" markers — small bright points that trace clean
 // circular orbits around the core at a few fixed radii, independent
@@ -353,22 +373,38 @@ function gaussianFromSeed(seed) {
   return Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2)
 }
 
+// Explicit percentile-bucketed star scale: 92% tiny, 6% medium, 2%
+// bright accent. Updated from 90/8/2 per brief — the target is for
+// tiny stars to absolutely dominate the galaxy's visual texture with
+// medium/bright serving only as rare highlights.
+function tieredScale(seed, tinyRange = [0.06, 0.22], medRange = [0.22, 0.52], brightRange = [0.52, 1.1]) {
+  const roll = hashToUnit(`${seed}-tier`)
+  const within = hashToUnit(`${seed}-tierwithin`)
+  if (roll < 0.92) {
+    return tinyRange[0] + within * (tinyRange[1] - tinyRange[0])
+  }
+  if (roll < 0.98) {
+    return medRange[0] + within * (medRange[1] - medRange[0])
+  }
+  return brightRange[0] + within * (brightRange[1] - brightRange[0])
+}
+
 // Secondary inter-arm dust: sparse, dim, randomly-scattered points
 // filling the space BETWEEN primary arms (unlike the arm points,
 // which hug a single spiral curve). Same total star budget class as
 // the arm dust but far fewer, low-opacity — this is what kills the
 // "obviously empty gap between two clean lines" look without adding
 // any new arms or increasing overall galaxy size.
-const INTERARM_DUST_POINTS_PER_GALAXY = 3600
+const INTERARM_DUST_POINTS_PER_GALAXY = 22000
 
 // Faint outer halo — a sparse, roughly-spherical (not disc-flat) shell
 // of very dim points surrounding the whole galaxy, well past
 // GALAXY_RADIUS. Real spiral galaxies sit inside a diffuse stellar
 // halo; this is a separate, lower-density layer from the disc-hugging
 // HAZE_POINTS_PER_GALAXY above (which stays close to the disc plane).
-const HALO_POINTS_PER_GALAXY = 1300
+const HALO_POINTS_PER_GALAXY = 8000
 const HALO_MIN_RADIUS_FRACTION = 1.0
-const HALO_MAX_RADIUS_FRACTION = 1.7
+const HALO_MAX_RADIUS_FRACTION = 1.8
 
 // Diffuse stellar disc — a very large population of tiny, extremely
 // dim stars spread across the ENTIRE galaxy (core to rim, all angles,
@@ -379,7 +415,7 @@ const HALO_MAX_RADIUS_FRACTION = 1.7
 // Deliberately the largest single population and deliberately the
 // dimmest — bulk coverage, near-invisible individually, additive in
 // aggregate.
-const DIFFUSE_DISC_POINTS_PER_GALAXY = 6000
+const DIFFUSE_DISC_POINTS_PER_GALAXY = 55000
 
 
 export function generateFillerStars() {
@@ -479,11 +515,10 @@ export function generateFillerStars() {
           site,
           kind: 'arm',
           position: [center.x + tilted.x, tilted.y + depthJitter, center.z + tilted.z],
-          // Power-curve bias (hash^2.5) skews most stars toward the
-          // small end of the range, with only occasional larger ones —
-          // matches the reference's countless tiny stars rather than
-          // a field of uniformly medium/large glowing dots.
-          scale: (0.18 + Math.pow(hashToUnit(`${seed}-scale`), 2.5) * 0.9) * (0.6 + densityBulge * 0.7),
+          // Explicit 90% tiny / 8% medium / 2% bright split, so
+          // oversized glowing particles are genuinely rare rather than
+          // just statistically less common.
+          scale: tieredScale(`${seed}-arm`) * (0.6 + densityBulge * 0.7),
         })
       }
     }
@@ -509,7 +544,7 @@ export function generateFillerStars() {
         site,
         kind: 'interarm',
         position: [center.x + tilted.x, tilted.y + depthJitter, center.z + tilted.z],
-        scale: 0.2 + hashToUnit(`${seed}-scale`) * 0.4,
+        scale: tieredScale(`${seed}-interarm`, [0.12, 0.24], [0.24, 0.4], [0.4, 0.6]),
       })
     }
 
@@ -538,10 +573,11 @@ export function generateFillerStars() {
         site,
         kind: 'diffuse',
         position: [center.x + tilted.x, tilted.y + depthJitter, center.z + tilted.z],
-        // Skewed hard toward tiny — this layer is meant to be
-        // countless near-invisible points, not a secondary
-        // medium-brightness structure.
-        scale: 0.12 + Math.pow(hashToUnit(`${seed}-scale`), 3) * 0.35,
+        // Tiniest range of any layer — this is meant to be countless
+        // near-invisible points, not a secondary medium-brightness
+        // structure. Still follows the 90/8/2 split so a rare few
+        // stand out slightly brighter within this layer too.
+        scale: tieredScale(`${seed}-diffuse`, [0.08, 0.16], [0.16, 0.26], [0.26, 0.4]),
       })
     }
 
@@ -572,7 +608,7 @@ export function generateFillerStars() {
           hazeTilted.y,
           center.z + hazeTilted.z,
         ],
-        scale: 0.6 + hashToUnit(`${seed}-scale`) * 1.4,
+        scale: 0.55 + hashToUnit(`${seed}-scale`) * 1.15,
       })
     }
 
@@ -598,7 +634,49 @@ export function generateFillerStars() {
           height,
           center.z + Math.sin(angle) * radius,
         ],
-        scale: 0.3 + hashToUnit(`${seed}-scale`) * 0.5,
+        scale: tieredScale(`${seed}-halo`, [0.2, 0.35], [0.35, 0.55], [0.55, 0.8]),
+      })
+    }
+
+    // Galactic bulge — a 3D Gaussian population centred at the core,
+    // extending ~40% of GALAXY_RADIUS laterally with Gaussian falloff,
+    // but with MUCH more vertical spread than the flat disc layers
+    // (those use VERTICAL_SCATTER ≈ 0.8, bulge uses 25% of lateral
+    // sigma). This is what gives real spiral galaxies their visible
+    // thickness when viewed at an angle — the disc is thin but the
+    // central bulge is a flattened spheroid that protrudes clearly.
+    const BULGE_COUNT = 6000
+    const BULGE_LATERAL_SIGMA = GALAXY_RADIUS * 0.38
+    const BULGE_VERTICAL_SIGMA = BULGE_LATERAL_SIGMA * 0.28
+
+    for (let i = 0; i < BULGE_COUNT; i++) {
+      const seed = `bulge-${site}-${i}`
+      // Box-Muller Gaussian for lateral position
+      const u1 = Math.max(hashToUnit(`${seed}-u1`), 1e-6)
+      const u2 = hashToUnit(`${seed}-u2`)
+      const u3 = Math.max(hashToUnit(`${seed}-u3`), 1e-6)
+      const u4 = hashToUnit(`${seed}-u4`)
+      const gx = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2) * BULGE_LATERAL_SIGMA
+      const gz = Math.sqrt(-2 * Math.log(u3)) * Math.cos(2 * Math.PI * u4) * BULGE_LATERAL_SIGMA
+      // Vertical distribution is its own independent Gaussian with a
+      // shorter sigma — the bulge is a flattened ellipsoid, not a sphere.
+      const u5 = Math.max(hashToUnit(`${seed}-u5`), 1e-6)
+      const u6 = hashToUnit(`${seed}-u6`)
+      const gy = Math.sqrt(-2 * Math.log(u5)) * Math.cos(2 * Math.PI * u6) * BULGE_VERTICAL_SIGMA
+
+      // Radial distance from bulge center — used to dim outer-bulge
+      // stars so the brightness profile falls off smoothly (Sersic-like)
+      const r2 = (gx * gx + gz * gz) / (BULGE_LATERAL_SIGMA * BULGE_LATERAL_SIGMA)
+      // Skip stars in the outer Gaussian tail that are too dim to be
+      // worth rendering — reduces total count without visible impact.
+      if (hashToUnit(`${seed}-keep`) > Math.exp(-r2 * 0.7)) continue
+
+      stars.push({
+        key: seed,
+        site,
+        kind: 'bulge',
+        position: [center.x + gx, gy, center.z + gz],
+        scale: tieredScale(`${seed}-bulge`, [0.12, 0.24], [0.24, 0.42], [0.42, 0.7]),
       })
     }
   }
@@ -636,7 +714,7 @@ export function generateCoreDust() {
         key: seed,
         site,
         position: [center.x + tilted.x, tilted.y, center.z + tilted.z],
-        scale: 0.4 + hashToUnit(`${seed}-scale`) * 0.9,
+        scale: tieredScale(`${seed}-coredust`, [0.28, 0.5], [0.5, 0.8], [0.8, 1.3]),
       })
     }
   }

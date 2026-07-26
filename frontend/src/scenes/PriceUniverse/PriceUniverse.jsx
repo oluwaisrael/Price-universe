@@ -1,17 +1,15 @@
 import { Suspense, useState, useMemo, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { Stars } from '@react-three/drei'
-import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing'
 import { useProducts } from '../../hooks/useProducts'
 import { normalizeProducts } from './normalizeProducts'
 import { computeGalaxyLayout, getGalaxyCenters, getGalaxyRadius } from './galaxyLayout'
 import ProductNode from './ProductNode'
 import GalaxyCore from './GalaxyCore'
+import GalaxyDisc from './GalaxyDisc'
 import GalaxyStarfield from './GalaxyStarfield'
 import GalaxyNebula, { AmbientNebula } from './GalaxyNebula'
-// GalaxyOrbitRings import removed — component no longer used, see
-// note near its former render call.
-import GalaxyOrbitSatellites from './GalaxyOrbitSatellites'
 import GalaxyLabel from './GalaxyLabel'
 import CameraRig from './CameraRig'
 import DetailPanel from './DetailPanel'
@@ -31,111 +29,113 @@ function PriceUniverse({ searchValue = '' }) {
   const debounceRef = useRef(null)
 
   const normalized = useMemo(() => normalizeProducts(rawProducts), [rawProducts])
-  const nodes = useMemo(() => computeGalaxyLayout(normalized), [normalized])
+  const nodes      = useMemo(() => computeGalaxyLayout(normalized), [normalized])
   const galaxyCenters = useMemo(() => getGalaxyCenters(), [])
-  const galaxyRadius = useMemo(() => getGalaxyRadius(), [])
+  const galaxyRadius  = useMemo(() => getGalaxyRadius(), [])
   const siteCounts = useMemo(() => {
     const counts = {}
-    for (const node of nodes) {
-      counts[node.site] = (counts[node.site] ?? 0) + 1
-    }
+    for (const node of nodes) counts[node.site] = (counts[node.site] ?? 0) + 1
     return counts
   }, [nodes])
-  const selectedNode = useMemo(
-    () => nodes.find((n) => n.id === selectedId) ?? null,
-    [nodes, selectedId]
-  )
+  const selectedNode = useMemo(() => nodes.find((n) => n.id === selectedId) ?? null, [nodes, selectedId])
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
-
     debounceRef.current = setTimeout(() => {
       const query = searchValue.trim().toLowerCase()
-
-      if (!query) {
-        setSelectedId(null)
-        return
-      }
-
+      if (!query) { setSelectedId(null); return }
       const match = nodes.find((n) => n.name.toLowerCase().includes(query))
       setSelectedId(match ? match.id : null)
     }, SEARCH_DEBOUNCE_MS)
-
     return () => clearTimeout(debounceRef.current)
   }, [searchValue, nodes])
+
+  // Midpoint between both galaxies — used for bridge nebula placement.
+  const galaxyMid = useMemo(() => {
+    const vals = Object.values(galaxyCenters)
+    return { x: (vals[0].x + vals[1].x) / 2, z: (vals[0].z + vals[1].z) / 2 }
+  }, [galaxyCenters])
 
   return (
     <div className={styles.canvasWrapper}>
       <Canvas
         camera={{ position: [30, 20, 88], fov: 50, far: 2000 }}
         onPointerMissed={() => setSelectedId(null)}
+        gl={{ antialias: true, alpha: false }}
       >
-        <color attach="background" args={['#03030a']} />
-        {/* Fog range tightened slightly (46->42 near, 200->170 far) —
-            atmosphere pass wants a stronger, faster falloff into haze
-            so depth reads more dramatically, rather than distant
-            elements staying almost fully visible out to 200 units. */}
-        <fog attach="fog" args={['#03030a', 42, 170]} />
+        <color attach="background" args={['#020208']} />
 
-        <ambientLight intensity={0.3} />
-        <hemisphereLight
-          skyColor="#3a4a8f"
-          groundColor="#0a0510"
-          intensity={0.35}
-        />
-        <pointLight position={[0, 14, 0]} intensity={1.5} />
-        <pointLight position={[-30, 8, 20]} intensity={0.4} color="#8899ff" />
+        {/* Scene lighting */}
+        <ambientLight intensity={0.12} />
+        <hemisphereLight skyColor="#2a3a7f" groundColor="#050310" intensity={0.22} />
+        {/* Per-galaxy colored fill lights */}
+        {Object.entries(galaxyCenters).map(([site, center]) => (
+          <pointLight
+            key={`fill-${site}`}
+            position={[center.x, 8, center.z]}
+            color={GALAXY_CORE_COLORS[site]}
+            intensity={0.6}
+            distance={55}
+            decay={2}
+          />
+        ))}
 
-        <Stars
-          radius={160}
-          depth={70}
-          count={13000}
-          factor={5}
-          saturation={0}
-          fade
-          speed={0.5}
-        />
+        {/* ── BACKGROUND ──────────────────────────────────────────── */}
+        <Stars radius={200} depth={80} count={22000} factor={4.8} saturation={0.4} fade speed={0.3} />
         <BackgroundPlanets />
 
-        {/* Ambient haze in open space, unrelated to either galaxy —
-            matches the mockup's soft violet cloud behind the hero
-            text. Positioned left/back of the camera target so it
-            doesn't wash out the galaxies themselves. */}
-        <AmbientNebula position={[-30, 10, -30]} color="#6a4fd9" radius={68} opacity={0.26} />
-        <AmbientNebula position={[130, -20, -80]} color="#2dd4bf" radius={60} opacity={0.14} />
-        
-         {Object.entries(galaxyCenters).map(([site, center]) => (
+        {/* Purple/violet nebula cloud left of hero — matches mockup bg */}
+        <AmbientNebula position={[-20, 8, -15]}  color="#5533cc" radius={80}  opacity={0.32} />
+        <AmbientNebula position={[-40, 16, -45]} color="#3322aa" radius={60}  opacity={0.18} />
+        {/* Right-side teal atmosphere (Jiji side) */}
+        <AmbientNebula position={[120, -10, -70]} color="#1a8899" radius={65} opacity={0.16} />
+        {/* Deep background — bridging between galaxies */}
+        <AmbientNebula position={[galaxyMid.x, -6, galaxyMid.z - 20]} color="#441166" radius={95} opacity={0.10} />
+
+        {/* ── PRIMARY GALAXY DISCS ────────────────────────────────────
+            Rendered FIRST so everything else (particles, core, cards)
+            composites on top. The disc is the dominant visual element
+            — particles and glow are enhancements over it, not the
+            primary structure. */}
+        {Object.entries(galaxyCenters).map(([site, center]) => (
+          <GalaxyDisc
+            key={`disc-${site}`}
+            center={center}
+            color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
+            radius={galaxyRadius}
+          />
+        ))}
+
+        {/* ── PER-GALAXY ATMOSPHERIC HAZE ────────────────────────────
+            Two layers per galaxy: inner tight glow (matches the warm/
+            cool aura the mockup shows around each disc), outer wide
+            corona (gives the galaxy physical weight and extent beyond
+            just the visible star field). Kept to 2 layers per galaxy
+            (was 8+) so the screen isn't blanketed by overlapping
+            sprites that wash out the disc structure. */}
+        {Object.entries(galaxyCenters).map(([site, center]) => (
           <GalaxyNebula
             key={`nebula-${site}`}
             center={center}
             color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
-            radius={galaxyRadius * 0.65}
+            radius={galaxyRadius * 0.9}
+            opacity={0.65}
           />
         ))}
-
-        {/* GalaxyOrbitRings removed — the reference has no visible
-            orbit paths of any kind (neither circles nor spiral
-            curves). The spiral shape now comes purely from dense
-            particle dust density in GalaxyStarfield, which reads as
-            a continuous luminous band rather than an explicit line. */}
-
         {Object.entries(galaxyCenters).map(([site, center]) => (
-          <GalaxyOrbitSatellites
-            key={`satellites-${site}`}
-            center={center}
+          <AmbientNebula
+            key={`corona-${site}`}
+            position={[center.x, 0, center.z]}
             color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
-            galaxyRadius={galaxyRadius}
+            radius={galaxyRadius * 1.8}
+            opacity={0.10}
           />
         ))}
 
-        {Object.entries(galaxyCenters).map(([site, center]) => (
-          <GalaxyCore
-            key={site}
-            center={center}
-            color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
-          />
-        ))}
+        {/* ── PARTICLE STARFIELD ──────────────────────────────────── */}
+        <GalaxyStarfield />
 
+        {/* ── GALAXY LABELS ───────────────────────────────────────── */}
         {Object.entries(galaxyCenters).map(([site, center]) => (
           <GalaxyLabel
             key={`label-${site}`}
@@ -147,8 +147,16 @@ function PriceUniverse({ searchValue = '' }) {
           />
         ))}
 
-        <GalaxyStarfield />
+        {/* ── GALAXY CORES ────────────────────────────────────────── */}
+        {Object.entries(galaxyCenters).map(([site, center]) => (
+          <GalaxyCore
+            key={`core-${site}`}
+            center={center}
+            color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
+          />
+        ))}
 
+        {/* ── PRODUCT CARDS ───────────────────────────────────────── */}
         <Suspense fallback={null}>
           {nodes.map((node) => (
             <ProductNode
@@ -156,9 +164,7 @@ function PriceUniverse({ searchValue = '' }) {
               node={node}
               isSelected={node.id === selectedId}
               onSelect={(clicked) =>
-                setSelectedId((current) =>
-                  current === clicked.id ? null : clicked.id
-                )
+                setSelectedId((cur) => (cur === clicked.id ? null : clicked.id))
               }
             />
           ))}
@@ -166,22 +172,20 @@ function PriceUniverse({ searchValue = '' }) {
 
         <CameraRig selectedNode={selectedNode} />
 
+        {/* ── POST PROCESSING ─────────────────────────────────────── */}
         <EffectComposer>
-          {/* Bloom softened: intensity 1.4->1.0, threshold 0.15->0.35.
-              Previously nearly everything in-scene contributed some
-              bloom, reading as a uniform soft-focus haze rather than
-              distinct bright things glowing. Raising the threshold
-              means only genuinely bright elements (cores, hovered
-              cards, orbit rings) bloom now, which is what makes bloom
-              read as "cinematic glow" instead of "everything is
-              blurry." */}
+          {/* Bloom — threshold tuned so the disc ring bands and core
+              bloom but the faint haze layers do not, keeping the disc
+              structure visible rather than one uniform glow. */}
           <Bloom
-            intensity={0.75}
-            luminanceThreshold={0.32}
-            luminanceSmoothing={0.9}
+            intensity={1.8}
+            luminanceThreshold={0.22}
+            luminanceSmoothing={0.88}
             mipmapBlur
+            radius={0.88}
           />
-          <Vignette eskil={false} offset={0.15} darkness={0.6} />
+          <Noise opacity={0.04} />
+          <Vignette eskil={false} offset={0.10} darkness={0.72} />
         </EffectComposer>
       </Canvas>
 

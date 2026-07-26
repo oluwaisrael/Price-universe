@@ -50,24 +50,26 @@ const AMBIENT_DUST_CENTER_Z = -14
 // overlapping points to melt into a luminous band instead of a
 // scatter of squares.
 function makeSoftDiscTexture() {
-  const size = 128
+  const size = 256
   const canvas = document.createElement('canvas')
   canvas.width = size
   canvas.height = size
   const ctx = canvas.getContext('2d')
 
   const gradient = ctx.createRadialGradient(
-    size / 2,
-    size / 2,
-    0,
-    size / 2,
-    size / 2,
-    size / 2
+    size / 2, size / 2, 0,
+    size / 2, size / 2, size / 2
   )
-  gradient.addColorStop(0, 'rgba(255,255,255,1)')
-  gradient.addColorStop(0.2, 'rgba(255,255,255,0.9)')
-  gradient.addColorStop(0.5, 'rgba(255,255,255,0.35)')
-  gradient.addColorStop(1, 'rgba(255,255,255,0)')
+  // 5-stop falloff: very bright core → gradual cinematic taper.
+  // Pulling the visible glow to only the inner 55% of the sprite's
+  // radius means the outer 45% is fully transparent — sprites overlap
+  // and blend additively at their bright centers without leaving a
+  // hard ring/disc impression at the sprite boundary.
+  gradient.addColorStop(0,    'rgba(255,255,255,1)')
+  gradient.addColorStop(0.08, 'rgba(255,255,255,0.92)')
+  gradient.addColorStop(0.25, 'rgba(255,255,255,0.55)')
+  gradient.addColorStop(0.55, 'rgba(255,255,255,0.12)')
+  gradient.addColorStop(1,    'rgba(255,255,255,0)')
 
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, size, size)
@@ -134,30 +136,29 @@ function buildBuffers(stars, brightnessFn) {
 function GalaxyStarfield() {
   const softTexture = useMemo(() => makeSoftDiscTexture(), [])
 
-  const { armBuffers, armFineBuffers, hazeBuffers, coreDustBuffers, interarmBuffers, diffuseBuffers, haloBuffers, ambientBuffers } = useMemo(() => {
+  const { armBuffers, armFineBuffers, hazeBuffers, coreDustBuffers, interarmBuffers, diffuseBuffers, haloBuffers, bulgeBuffers, ambientBuffers } = useMemo(() => {
     const stars = generateFillerStars()
-    const armStars = stars.filter((s) => s.kind === 'arm')
-    const hazeStars = stars.filter((s) => s.kind === 'haze')
-    const interarmStars = stars.filter((s) => s.kind === 'interarm')
+    const armStars     = stars.filter((s) => s.kind === 'arm')
+    const hazeStars    = stars.filter((s) => s.kind === 'haze')
+    const interarmStars= stars.filter((s) => s.kind === 'interarm')
     const diffuseStars = stars.filter((s) => s.kind === 'diffuse')
-    const haloStars = stars.filter((s) => s.kind === 'halo')
-    const coreDust = generateCoreDust()
+    const haloStars    = stars.filter((s) => s.kind === 'halo')
+    const bulgeStars   = stars.filter((s) => s.kind === 'bulge')
+    const coreDust     = generateCoreDust()
 
     return {
-      armBuffers: buildBuffers(armStars, (s) => 0.75 + s.scale * 0.6),
-      armFineBuffers: buildBuffers(armStars, (s) => 0.55 + s.scale * 0.4),
-      hazeBuffers: buildBuffers(hazeStars, (s) => 0.5 + s.scale * 0.4),
-      coreDustBuffers: buildBuffers(coreDust, (s) => 0.85 + s.scale * 0.5),
-      // Dim, low-contrast brightness — these fill inter-arm gaps
-      // without competing with the brighter arm bands themselves.
-      interarmBuffers: buildBuffers(interarmStars, (s) => 0.3 + s.scale * 0.3),
-      // Faintest layer of all — bulk ambient fill across the whole
-      // disc, individually near-invisible, additive in aggregate.
-      diffuseBuffers: buildBuffers(diffuseStars, (s) => 0.18 + s.scale * 0.25),
-      // Very dim, sparse halo — barely-there presence surrounding the
-      // whole galaxy.
-      haloBuffers: buildBuffers(haloStars, (s) => 0.4 + s.scale * 0.35),
-      ambientBuffers: buildAmbientDust(),
+      armBuffers:      buildBuffers(armStars,      (s) => 0.75 + s.scale * 0.6),
+      armFineBuffers:  buildBuffers(armStars,      (s) => 0.55 + s.scale * 0.4),
+      hazeBuffers:     buildBuffers(hazeStars,     (s) => 0.5  + s.scale * 0.4),
+      coreDustBuffers: buildBuffers(coreDust,      (s) => 0.85 + s.scale * 0.5),
+      interarmBuffers: buildBuffers(interarmStars, (s) => 0.3  + s.scale * 0.3),
+      diffuseBuffers:  buildBuffers(diffuseStars,  (s) => 0.18 + s.scale * 0.25),
+      haloBuffers:     buildBuffers(haloStars,     (s) => 0.4  + s.scale * 0.35),
+      // Bulge stars fade with radius (handled in generator) and are
+      // rendered at medium opacity — they sit at the core–arm transition
+      // so they shouldn't overpower the arm points.
+      bulgeBuffers:    buildBuffers(bulgeStars,    (s) => 0.45 + s.scale * 0.4),
+      ambientBuffers:  buildAmbientDust(),
     }
   }, [])
 
@@ -179,17 +180,42 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={1.05}
+          size={0.92}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.9}
+          opacity={0.80}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
         />
+      </points>
+
+      {/* Galactic bulge — 3D Gaussian population bridging core to disc.
+          Rendered at medium size/opacity: bright enough to read as the
+          galaxy's central mass, dim enough not to overpower the arms. */}
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" count={bulgeBuffers.positions.length/3} array={bulgeBuffers.positions} itemSize={3} />
+          <bufferAttribute attach="attributes-color"    count={bulgeBuffers.colors.length/3}    array={bulgeBuffers.colors}    itemSize={3} />
+        </bufferGeometry>
+        <pointsMaterial size={0.44} vertexColors map={softTexture} alphaMap={softTexture}
+          transparent opacity={0.65} sizeAttenuation depthWrite={false}
+          blending={THREE.AdditiveBlending} toneMapped={false} />
+      </points>
+
+      {/* Second fine-grain bulge pass at tiny size — adds the countless
+          pinpoint stars seen in real galactic centres. */}
+      <points>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" count={bulgeBuffers.positions.length/3} array={bulgeBuffers.positions} itemSize={3} />
+          <bufferAttribute attach="attributes-color"    count={bulgeBuffers.colors.length/3}    array={bulgeBuffers.colors}    itemSize={3} />
+        </bufferGeometry>
+        <pointsMaterial size={0.16} vertexColors map={softTexture} alphaMap={softTexture}
+          transparent opacity={0.45} sizeAttenuation depthWrite={false}
+          blending={THREE.AdditiveBlending} toneMapped={false} />
       </points>
 
       <points>
@@ -208,12 +234,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.95}
+          size={0.78}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.85}
+          opacity={0.68}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -237,12 +263,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.32}
+          size={0.26}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.55}
+          opacity={0.56}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -269,12 +295,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.42}
+          size={0.34}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.5}
+          opacity={0.45}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -304,12 +330,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.24}
+          size={0.48}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.4}
+          opacity={0.62}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -333,12 +359,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={1.6}
+          size={1.4}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.28}
+          opacity={0.32}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -367,12 +393,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.55}
+          size={0.52}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.18}
+          opacity={0.34}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -396,7 +422,7 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.4}
+          size={0.36}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}

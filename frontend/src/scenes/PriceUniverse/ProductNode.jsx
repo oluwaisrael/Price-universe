@@ -86,6 +86,7 @@ function ProductNode({ node, isSelected, onSelect }) {
   // the identical log-normalized ranking as "higher price = higher in
   // space" rather than inventing a second scale.
   const priceScale = typeof node.priceScale === 'number' ? node.priceScale : 0.5
+  const visualScale = typeof node.visualScale === 'number' ? node.visualScale : 1.0
 
   return (
     <group>
@@ -123,6 +124,7 @@ function ProductNode({ node, isSelected, onSelect }) {
         color={node.color}
         name={node.name}
         priceScale={priceScale}
+        visualScale={visualScale}
         isHovered={isHovered}
         seed={String(node.id)}
       />
