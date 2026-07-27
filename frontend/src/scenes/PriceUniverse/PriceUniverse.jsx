@@ -15,6 +15,8 @@ import CameraRig from './CameraRig'
 import DetailPanel from './DetailPanel'
 import styles from './PriceUniverse.module.css'
 import BackgroundPlanets from './BackgroundPlanets'
+import Blackhole from './Blackhole'
+import CrackNebula from './CrackNebula'
 
 const SEARCH_DEBOUNCE_MS = 500
 
@@ -84,13 +86,17 @@ function PriceUniverse({ searchValue = '' }) {
         <Stars radius={200} depth={80} count={22000} factor={4.8} saturation={0.4} fade speed={0.3} />
         <BackgroundPlanets />
 
-        {/* Purple/violet nebula cloud left of hero — matches mockup bg */}
-        <AmbientNebula position={[-20, 8, -15]}  color="#5533cc" radius={80}  opacity={0.32} />
-        <AmbientNebula position={[-40, 16, -45]} color="#3322aa" radius={60}  opacity={0.18} />
-        {/* Right-side teal atmosphere (Jiji side) */}
-        <AmbientNebula position={[120, -10, -70]} color="#1a8899" radius={65} opacity={0.16} />
-        {/* Deep background — bridging between galaxies */}
-        <AmbientNebula position={[galaxyMid.x, -6, galaxyMid.z - 20]} color="#441166" radius={95} opacity={0.10} />
+        {/* Crack nebulas — fractal rifts of purple/violet gas across bg */}
+        <CrackNebula />
+
+        {/* Blackhole */}
+        <Blackhole position={[-52, 28, -82]} />
+
+        {/* Subtle teal atmosphere on right side (Jiji galaxy side) */}
+        <AmbientNebula position={[120, -10, -70]} color="#1a8899" radius={65} opacity={0.14} />
+        {/* Deep background bridge — very faint, doesn't read as colored,
+            just adds the sense of cosmic gas between the two galaxies */}
+        <AmbientNebula position={[galaxyMid.x, -6, galaxyMid.z - 20]} color="#220833" radius={95} opacity={0.09} />
 
         {/* ── PRIMARY GALAXY DISCS ────────────────────────────────────
             Rendered FIRST so everything else (particles, core, cards)

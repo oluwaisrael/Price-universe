@@ -107,7 +107,7 @@ const VERTICAL_SCATTER = 0.35 // small y-jitter so the disc isn't perfectly flat
 // targets should stay exactly where their price-driven height (y)
 // places them — only the purely decorative filler stars / haze /
 // core / rings get tilted, which is enough to sell the spiral shape.
-const DISC_TILT_RAD = (58 * Math.PI) / 180
+const DISC_TILT_RAD = (42 * Math.PI) / 180  // Matched to GalaxyDisc.jsx — particles and disc plane now align
 
 function tiltDiscPoint(x, y, z) {
   const cos = Math.cos(DISC_TILT_RAD)

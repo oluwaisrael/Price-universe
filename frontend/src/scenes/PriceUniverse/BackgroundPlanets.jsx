@@ -146,7 +146,7 @@ function BackgroundPlanets() {
         // sat directly behind the hero text and dominated the left
         // side of the frame. Now positioned as a background accent
         // nearer the galaxies instead of overlapping the text panel.
-        position: [55, -12, -95],
+        position: [38, 8, -138],
         scale: 16,
         texturePath: 'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/jupitermap.jpg',
         glowColor: '#fb923c',

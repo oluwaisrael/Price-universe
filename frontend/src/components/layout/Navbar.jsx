@@ -19,7 +19,7 @@ function Navbar({ transparent = false }) {
       <nav className={styles.center}>
         <a href="/" className={styles.navLink}>Home</a>
         <a href="#products" className={styles.navLink}>Products</a>
-        <a href="#" className={styles.navLink}>About</a>
+        <a href="#" className={styles.navLink}>A</a>
         <a href="#" className={styles.navLink}>How it works</a>
       </nav>
       <div className={styles.right}>
