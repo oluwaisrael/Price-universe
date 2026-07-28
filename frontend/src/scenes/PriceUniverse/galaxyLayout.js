@@ -52,17 +52,17 @@ const MAX_HEIGHT = 4.5
 // constant — a bigger radius alone would just spread the same star
 // count thinner and look emptier, the opposite of the goal.
 const GALAXY_RADIUS = 26
-const CORE_RADIUS = 0.6
+const CORE_RADIUS = 0.3
 // Matches VISUAL_ARM_COUNT (below) so real product nodes sit on the
 // same arms the dust particles trace — previously this was 2 while
 // dust used 5, meaning products only ever emerged from 2 of the 5
 // visible arms instead of naturally distributing across all of them.
-const ARM_COUNT = 6
+const ARM_COUNT = 17
 // Visual-only arm count for the decorative dust bands. Kept equal to
 // ARM_COUNT (both 6 now) so real product nodes and dust trace the
 // same 6 arms — bumped from 5 to 6 for a slightly denser, more
 // classic grand-design spiral silhouette.
-const VISUAL_ARM_COUNT = 6
+const VISUAL_ARM_COUNT = 17
 // Increased from 1.35 to 2.1 — at the scene's fairly shallow camera
 // pitch, 1.35 turns read mostly as radial scatter/a fan rather than a
 // visible curved arm. More winding makes the pinwheel shape legible
@@ -85,7 +85,7 @@ const SPIRAL_TURNS = 0.85
 // glow sprites (larger, blended, semi-transparent), a scatter that
 // narrow left visible dark seams between arms; this width lets
 // neighboring sprites overlap into one continuous luminous band.
-const ARM_SCATTER = 0.68
+const ARM_SCATTER = 0.4
 const VERTICAL_SCATTER = 0.35 // small y-jitter so the disc isn't perfectly flat
 
 // The default camera sits at a shallow ~15° pitch (see CameraRig's
@@ -334,9 +334,9 @@ export function getDiscTiltRadians() {
 // visible gaps between neighboring arms once rendered as soft glow
 // sprites instead of hard dots (sprites need overlap to blend into a
 // continuous band; hard dots could get away with less coverage).
-const FILLER_STARS_PER_ARM = 3800
+const FILLER_STARS_PER_ARM = 3000
 const HAZE_POINTS_PER_GALAXY = 500
-const CORE_DUST_POINTS_PER_GALAXY = 1800
+const CORE_DUST_POINTS_PER_GALAXY = 1000
 const CORE_DUST_MAX_RADIUS_FRACTION = 0.22
 const DEPTH_VARIANCE = 0.28
 
@@ -395,7 +395,7 @@ function tieredScale(seed, tinyRange = [0.06, 0.22], medRange = [0.22, 0.52], br
 // the arm dust but far fewer, low-opacity — this is what kills the
 // "obviously empty gap between two clean lines" look without adding
 // any new arms or increasing overall galaxy size.
-const INTERARM_DUST_POINTS_PER_GALAXY = 22000
+const INTERARM_DUST_POINTS_PER_GALAXY = 20000
 
 // Faint outer halo — a sparse, roughly-spherical (not disc-flat) shell
 // of very dim points surrounding the whole galaxy, well past

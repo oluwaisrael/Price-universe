@@ -36,3 +36,9 @@
   color: rgba(255, 255, 255, 0.5);
   font-size: 0.75rem;
 }
+.canvasWrapper {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  background: #000008; /* fallback while canvas renders */
+}

@@ -17,7 +17,7 @@ import { getDiscTiltRadians } from './galaxyLayout'
  * reads as a soft glowing thread at this scale without the extra
  * geometry cost of a tube mesh per arm.
  */
-const ARM_VISUAL_COUNT = 5
+const ARM_VISUAL_COUNT = 8
 const SPIRAL_TURNS_VISUAL = 2.1 // kept in sync with galaxyLayout.js SPIRAL_TURNS
 const CORE_RADIUS_VISUAL = 0.6
 const SEGMENTS_PER_ARM = 96

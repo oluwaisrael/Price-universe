@@ -17,6 +17,7 @@ import styles from './PriceUniverse.module.css'
 import BackgroundPlanets from './BackgroundPlanets'
 import Blackhole from './Blackhole'
 import CrackNebula from './CrackNebula'
+import DeepSpaceBackground3D from './DeepSpaceBackground3D/DeepSpaceBackground3D'
 
 const SEARCH_DEBOUNCE_MS = 500
 
@@ -59,13 +60,16 @@ function PriceUniverse({ searchValue = '' }) {
   }, [galaxyCenters])
 
   return (
-    <div className={styles.canvasWrapper}>
-      <Canvas
-        camera={{ position: [30, 20, 88], fov: 50, far: 2000 }}
-        onPointerMissed={() => setSelectedId(null)}
-        gl={{ antialias: true, alpha: false }}
-      >
-        <color attach="background" args={['#020208']} />
+  <div className={styles.canvasWrapper}>
+    <Canvas
+      camera={{ position: [30, 20, 88], fov: 50, far: 2000 }}
+      onPointerMissed={() => setSelectedId(null)}
+      gl={{ antialias: true, alpha: false }}
+    >
+      <color attach="background" args={['#000008']} />
+
+      {/* ── DEEP SPACE BACKGROUND (GPU, inside R3F) ─────────────── */}
+      <DeepSpaceBackground3D />
 
         {/* Scene lighting */}
         <ambientLight intensity={0.12} />
@@ -83,8 +87,8 @@ function PriceUniverse({ searchValue = '' }) {
         ))}
 
         {/* ── BACKGROUND ──────────────────────────────────────────── */}
-        <Stars radius={200} depth={80} count={22000} factor={4.8} saturation={0.4} fade speed={0.3} />
-        <BackgroundPlanets />
+        {/*<Stars radius={200} depth={80} count={22000} factor={4.8} saturation={0.4} fade speed={0.3} />
+        <BackgroundPlanets />*/}
 
         {/* Crack nebulas — fractal rifts of purple/violet gas across bg */}
         <CrackNebula />
