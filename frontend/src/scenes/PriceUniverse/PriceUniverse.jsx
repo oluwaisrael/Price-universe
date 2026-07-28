@@ -1,6 +1,5 @@
 import { Suspense, useState, useMemo, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { Stars } from '@react-three/drei'
 import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing'
 import { useProducts } from '../../hooks/useProducts'
 import { normalizeProducts } from './normalizeProducts'
@@ -14,10 +13,9 @@ import GalaxyLabel from './GalaxyLabel'
 import CameraRig from './CameraRig'
 import DetailPanel from './DetailPanel'
 import styles from './PriceUniverse.module.css'
-import BackgroundPlanets from './BackgroundPlanets'
 import Blackhole from './Blackhole'
-import CrackNebula from './CrackNebula'
-import DeepSpaceBackground3D from './DeepSpaceBackground3D/DeepSpaceBackground3D'
+import DeepSpaceBackground3D from './DeepSpaceBackground3D'
+import BackgroundPlanets from './BackgroundPlanets'
 
 const SEARCH_DEBOUNCE_MS = 500
 
@@ -88,9 +86,7 @@ function PriceUniverse({ searchValue = '' }) {
 
         {/* ── BACKGROUND ──────────────────────────────────────────── */}
         <BackgroundPlanets />
-
         {/* Crack nebulas — fractal rifts of purple/violet gas across bg */}
-        <CrackNebula />
 
         {/* Blackhole */}
         <Blackhole position={[-52, 28, -82]} />

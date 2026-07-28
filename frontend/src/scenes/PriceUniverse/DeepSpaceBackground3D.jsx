@@ -79,7 +79,7 @@ const voidVert = /* glsl */ `
 varying vec2 vUv;
 void main() {
   vUv = uv;
-  gl_Position = vec4(position.xy, 1.0, 1.0);
+  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);;
 }
 `
 const voidFrag = /* glsl */ `
@@ -268,27 +268,27 @@ void main() {
   // Orange anchor (Jumia galaxy side — left-ish)
   vec2  cOrange  = vec2(0.18, 0.52);
   float rOrange  = 0.55;
-  vec3  colOrange = vec3(0.28, 0.08, 0.01);
+  vec3  colOrange = vec3(0.06, 0.02, 0.00);
 
   // Amber transition
   vec2  cAmber   = vec2(0.35, 0.55);
   float rAmber   = 0.42;
-  vec3  colAmber  = vec3(0.16, 0.06, 0.02);
+  vec3  colAmber  = vec3(0.04, 0.01, 0.01);
 
   // Purple bridge — centre
   vec2  cPurple  = vec2(0.50, 0.48);
   float rPurple  = 0.50;
-  vec3  colPurple = vec3(0.08, 0.02, 0.12);
+  vec3  colPurple = vec3(0.04, 0.01, 0.06);
 
   // Deep blue transition
   vec2  cBlue    = vec2(0.65, 0.52);
   float rBlue    = 0.42;
-  vec3  colBlue   = vec3(0.01, 0.03, 0.14);
+  vec3  colBlue   = vec3(0.00, 0.01, 0.05);
 
   // Cyan anchor (Jiji galaxy side — right-ish)
   vec2  cCyan    = vec2(0.82, 0.50);
   float rCyan    = 0.55;
-  vec3  colCyan   = vec3(0.00, 0.06, 0.16);
+  vec3  colCyan   = vec3(0.00, 0.02, 0.06);
 
   // Correct aspect ratio for distances
   vec2 uvA = vec2(uv.x * aspect, uv.y);
@@ -389,34 +389,16 @@ void main() {
 
 const NEBULA_CONFIGS = [
   {
-    // Orange-amber cloud — left side
-    offset: [-0.22, 0.08], scale: 1.6, warp: 1.8, maskRadius: 0.55,
-    colorA: [0.15, 0.05, 0.01], colorB: [0.28, 0.10, 0.02],
-    opacity: 0.55, z: -95, size: 120,
-  },
-  {
-    // Purple-blue bridge cloud — centre
-    offset: [0.05, -0.05], scale: 1.3, warp: 2.2, maskRadius: 0.65,
-    colorA: [0.05, 0.01, 0.10], colorB: [0.08, 0.02, 0.18],
-    opacity: 0.45, z: -110, size: 130,
-  },
-  {
-    // Cyan-blue cloud — right side
-    offset: [0.25, 0.04], scale: 1.7, warp: 1.5, maskRadius: 0.52,
-    colorA: [0.01, 0.04, 0.12], colorB: [0.02, 0.08, 0.20],
-    opacity: 0.50, z: -88, size: 115,
-  },
-  {
-    // Warm amber accent — upper left
-    offset: [-0.30, 0.20], scale: 2.2, warp: 1.2, maskRadius: 0.45,
-    colorA: [0.10, 0.04, 0.00], colorB: [0.20, 0.07, 0.01],
-    opacity: 0.35, z: -130, size: 100,
-  },
-  {
-    // Deep indigo — far background fill
-    offset: [0.10, -0.18], scale: 0.9, warp: 2.8, maskRadius: 0.70,
+    // Primary nebula — top-left corner only
+    offset: [-0.28, 0.22], scale: 1.4, warp: 1.8, maskRadius: 0.38,
     colorA: [0.03, 0.01, 0.08], colorB: [0.06, 0.02, 0.14],
-    opacity: 0.40, z: -160, size: 145,
+    opacity: 0.35, z: -95, size: 120,
+  },
+  {
+    // Secondary soft cloud — upper-left, barely visible
+    offset: [-0.20, 0.30], scale: 1.8, warp: 2.2, maskRadius: 0.30,
+    colorA: [0.02, 0.01, 0.06], colorB: [0.04, 0.01, 0.10],
+    opacity: 0.22, z: -130, size: 100,
   },
 ]
 
@@ -424,22 +406,9 @@ const NEBULA_CONFIGS = [
 
 const DUST_CONFIGS = [
   {
-    // Warm ochre dust — traces Jumia galaxy
-    offset: [-0.15, 0.10], scale: 2.5, warp: 3.0, maskRadius: 0.48,
-    colorA: [0.12, 0.05, 0.01], colorB: [0.22, 0.09, 0.02],
-    opacity: 0.28, z: -80, size: 90,
-  },
-  {
-    // Cool teal dust — traces Jiji galaxy
-    offset: [0.18, -0.08], scale: 2.8, warp: 2.5, maskRadius: 0.45,
-    colorA: [0.01, 0.05, 0.10], colorB: [0.02, 0.09, 0.18],
-    opacity: 0.25, z: -85, size: 85,
-  },
-  {
-    // Purple connector dust — bridges both
-    offset: [0.00, 0.15], scale: 1.8, warp: 3.5, maskRadius: 0.55,
-    colorA: [0.04, 0.01, 0.08], colorB: [0.07, 0.02, 0.14],
-    opacity: 0.22, z: -75, size: 95,
+    offset: [-0.22, 0.18], scale: 2.2, warp: 3.0, maskRadius: 0.32,
+    colorA: [0.02, 0.01, 0.06], colorB: [0.05, 0.02, 0.10],
+    opacity: 0.15, z: -80, size: 90,
   },
 ]
 
@@ -644,7 +613,7 @@ export default function DeepSpaceBackground3D() {
 
       {/* ── Layer 0: Void base — fullscreen, no depth test ───────────────── */}
       <mesh renderOrder={-100} frustumCulled={false}>
-        <planeGeometry args={[2, 2]} />
+        <planeGeometry args={[200, 120]} />
         <primitive object={voidMat} attach="material" />
       </mesh>
 

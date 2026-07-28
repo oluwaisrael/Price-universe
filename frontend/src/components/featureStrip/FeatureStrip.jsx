@@ -93,14 +93,14 @@ const FEATURES = [
     id: 'history',
     icon: ChartIcon,
     title: 'Price History',
-    description: 'View detailed price history and trends to buy at the perfect time.',
+    description: 'View  price history and trends to buy at the very perfect time.',
     demo: 'chart',
   },
   {
     id: 'ai',
     icon: BrainIcon,
     title: 'AI Predictions',
-    description: 'Our AI analyzes trends to predict future price movements.',
+    description: 'Derin\'s AI analyzes trends to predict future price movements.',
     demo: 'prediction',
   },
 ]
@@ -109,9 +109,9 @@ function FeatureStrip() {
   return (
     <section className={styles.strip} aria-label="Key features">
       <div className={styles.header}>
-        <h2 className={styles.heading}>Powerful insights. Smarter decisions.</h2>
+        <h2 className={styles.heading}>Derin's helping you make smarter decisions.</h2>
         <p className={styles.subheading}>
-          Everything you need to track prices and save money
+          Giving you everything you need to track prices
         </p>
       </div>
 
@@ -139,7 +139,7 @@ function FeatureStrip() {
                 <div className={styles.alertDemo}>
                   <div className={styles.alertIcon}>🔔</div>
                   <div className={styles.alertText}>
-                    <div className={styles.alertTitle}>iPhone 13 dropped to ₦420,000</div>
+                    <div className={styles.alertTitle}>Derin said iPhone 17 dropped to ₦420,000</div>
                   </div>
                 </div>
               )}
@@ -153,7 +153,7 @@ function FeatureStrip() {
               {demo === 'prediction' && (
                 <div className={styles.predictionDemo}>
                   <span className={styles.predLabel}>Likely to drop</span>
-                  <span className={styles.predValue}>87%</span>
+                  <span className={styles.predValue}>X%</span>
                 </div>
               )}
             </div>

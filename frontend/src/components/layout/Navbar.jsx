@@ -19,11 +19,11 @@ function Navbar({ transparent = false }) {
       <nav className={styles.center}>
         <a href="/" className={styles.navLink}>Home</a>
         <a href="#products" className={styles.navLink}>Products</a>
-        <a href="#" className={styles.navLink}>A</a>
+        <a href="#" className={styles.navLink}>About Derin</a>
         <a href="#" className={styles.navLink}>How it works</a>
       </nav>
       <div className={styles.right}>
-        <button className={styles.trackButton}>Track a Product</button>
+        <button className={styles.trackButton}>Wanna Track a Product?</button>
         <button className={styles.bellButton} aria-label="Notifications">
           <BellIcon />
         </button>

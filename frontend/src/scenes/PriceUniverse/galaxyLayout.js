@@ -76,7 +76,7 @@ const VISUAL_ARM_COUNT = 17
 // Real spiral galaxies read clearly around 0.5-1.2 turns; 0.85 keeps
 // visible curvature while letting arms separate cleanly as radius
 // grows, instead of overlapping.
-const SPIRAL_TURNS = 0.85
+const SPIRAL_TURNS = 1.6
 // Narrower band off the arm centerline — 0.5 was wide enough that
 // filler stars smeared across neighboring arms instead of tracing a
 // crisp line.
