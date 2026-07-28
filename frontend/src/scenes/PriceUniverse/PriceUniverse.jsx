@@ -87,8 +87,7 @@ function PriceUniverse({ searchValue = '' }) {
         ))}
 
         {/* ── BACKGROUND ──────────────────────────────────────────── */}
-        {/*<Stars radius={200} depth={80} count={22000} factor={4.8} saturation={0.4} fade speed={0.3} />
-        <BackgroundPlanets />*/}
+        <BackgroundPlanets />
 
         {/* Crack nebulas — fractal rifts of purple/violet gas across bg */}
         <CrackNebula />
@@ -188,8 +187,8 @@ function PriceUniverse({ searchValue = '' }) {
               bloom but the faint haze layers do not, keeping the disc
               structure visible rather than one uniform glow. */}
           <Bloom
-            intensity={1.8}
-            luminanceThreshold={0.22}
+            intensity={1.4}
+            luminanceThreshold={0.30}
             luminanceSmoothing={0.88}
             mipmapBlur
             radius={0.88}

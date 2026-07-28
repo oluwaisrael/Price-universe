@@ -103,9 +103,9 @@ const LAYERS = [
   // Core transition
   { sxMult: 0.42, opacity: 0.78, texOpts: { noiseStr: 0.18, noiseSeed: 5, corePow: 3.5, baseAlpha: 0.88, rings: [] } },
   // Nucleus corona
-  { sxMult: 0.18, opacity: 0.90, texOpts: { noiseStr: 0.06, noiseSeed: 6, corePow: 5.0, baseAlpha: 1.0, rings: [] } },
+  { sxMult: 0.18, opacity: 0.30, texOpts: { noiseStr: 0.06, noiseSeed: 6, corePow: 5.0, baseAlpha: 0.48, rings: [] } },
   // White-hot nucleus — Bloom blows this into a wide halo
-  { sxMult: 0.06, opacity: 1.0,  texOpts: { noiseStr: 0.0,  noiseSeed: 7, corePow: 7.0, baseAlpha: 1.0, rings: [] } },
+  { sxMult: 0.06, opacity: 0.30,  texOpts: { noiseStr: 0.0,  noiseSeed: 7, corePow: 7.0, baseAlpha: 0.48, rings: [] } },
 ]
 
 function GalaxyDisc({ center, color, radius }) {
