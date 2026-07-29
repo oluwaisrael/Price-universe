@@ -37,8 +37,8 @@ const GALAXY_CENTERS = {
   // Nudged +6x/-4z from (14,-9) — a small shift to ease Jumia's outer
   // ring overlapping the hero text/search bar, without moving the
   // whole camera again (a full pan previously overcorrected badly).
-  Jumia: { x: 20, z: -13 },
-  Jiji: { x: 92, z: -34 },
+  Jumia: { x: 50, z: -13 },
+  Jiji: { x: 88, z: 8 },
 }
 const DEFAULT_GALAXY_CENTER = { x: 0, z: 0 }
 
@@ -107,17 +107,26 @@ const VERTICAL_SCATTER = 0.35 // small y-jitter so the disc isn't perfectly flat
 // targets should stay exactly where their price-driven height (y)
 // places them — only the purely decorative filler stars / haze /
 // core / rings get tilted, which is enough to sell the spiral shape.
-const DISC_TILT_RAD = (42 * Math.PI) / 180  // Matched to GalaxyDisc.jsx — particles and disc plane now align
-
+const DISC_TILT_RAD = (62 * Math.PI) / 180   // flatter ellipse
+const DISC_YAW_RAD  = (25 * Math.PI) / 180   // diagonal lean direction
+// Replace tiltDiscPoint entirely:
 function tiltDiscPoint(x, y, z) {
-  const cos = Math.cos(DISC_TILT_RAD)
-  const sin = Math.sin(DISC_TILT_RAD)
+  // Step 1: X-axis tilt (disc inclination — makes it an ellipse)
+  const cx = Math.cos(DISC_TILT_RAD), sx = Math.sin(DISC_TILT_RAD)
   return {
-    x,
-    y: y * cos - z * sin,
-    z: y * sin + z * cos,
+    x: x1,
+    y: y1 * cx - z1 * sx,
+    z: y1 * sx + z1 * cx,
   }
 }
+
+  // Step 2: Y-axis yaw (rotates the lean direction — gives the ⟋ angle)
+    const cy = Math.cos(DISC_YAW_RAD), sy = Math.sin(DISC_YAW_RAD)
+    const x1 =  x * cy + z * sy
+    const y1 =  y
+    const z1 = -x * sy + z * cy
+    
+
 
 function hashToUnit(str) {
   let h = 2166136261

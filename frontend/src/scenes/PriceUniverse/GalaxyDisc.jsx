@@ -18,7 +18,8 @@ import * as THREE from 'three'
  * viewport as a solid orange/teal wall. Capped at 1.2.
  */
 
-const DISC_TILT_RAD = (42 * Math.PI) / 180
+const DISC_TILT_RAD = (62 * Math.PI) / 180
+const DISC_YAW_RAD  = (25 * Math.PI) / 180
 
 function makeDiscTex({
   size      = 512,
@@ -128,35 +129,32 @@ function GalaxyDisc({ center, color, radius }) {
   })
 
   return (
-    <group>
-      {LAYERS.map((layer, i) => {
-        const d = radius * layer.sxMult * 2
-        return (
-          <mesh
-            key={i}
-            ref={(el) => { meshRefs.current[i] = el }}
-            position={[center.x, -0.5 + i * 0.06, center.z]}
-            // NEGATIVE tilt — matches tiltDiscPoint() positive-X convention.
-            // Positive rotation here tilted the disc the wrong way,
-            // producing the massive orange wedge filling the viewport.
-            rotation={[-DISC_TILT_RAD, 0, 0]}
-          >
-            <planeGeometry args={[d, d]} />
-            <meshBasicMaterial
-              map={textures[i]}
-              color={col}
-              transparent
-              opacity={layer.opacity}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-              toneMapped={false}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        )
-      })}
-    </group>
-  )
+  <group position={[center.x, 0, center.z]} rotation={[0, DISC_YAW_RAD, 0]}>
+    {LAYERS.map((layer, i) => {
+      const d = radius * layer.sxMult * 2
+      return (
+        <mesh
+          key={i}
+          ref={(el) => { meshRefs.current[i] = el }}
+          position={[0, -0.5 + i * 0.06, 0]}
+          rotation={new THREE.Euler(-DISC_TILT_RAD, 0, 0)}
+        >
+          <planeGeometry args={[d, d]} />
+          <meshBasicMaterial
+            map={textures[i]}
+            color={col}
+            transparent
+            opacity={layer.opacity}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      )
+    })}
+  </group>
+)
 }
 
 export default GalaxyDisc

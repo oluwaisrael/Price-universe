@@ -1,192 +1,293 @@
-import { Suspense, useRef, useMemo } from 'react'
+import { useRef, useMemo } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { useTexture } from '@react-three/drei'
 import * as THREE from 'three'
-import ImageErrorBoundary from './ImageErrorBoundary'
 
-/**
- * BackgroundPlanets — real textured planets, loaded via drei's
- * useTexture (Suspense-based) instead of the previous raw
- * TextureLoader().load(url, callback) pattern, which mutated a plain
- * object inside the callback that React never observed — meshes kept
- * referencing an `undefined` map forever, regardless of whether the
- * fetch actually succeeded. Each planet gets its own Suspense boundary
- * so one slow/failed texture doesn't block the others from appearing.
- *
- * Texture URLs point at three.js's public example asset CDN as a
- * working placeholder — for production, download these and serve them
- * from this project's own /public/textures/ so the scene doesn't
- * depend on an external site staying up.
- */
-function Planet({ rotationRef, rotationSpeed, position, scale, texturePath, glowColor, glowIntensity }) {
-  const texture = useTexture(texturePath)
+// ─── Planet body shader ───────────────────────────────────────────────────────
 
-  useFrame(() => {
-    if (rotationRef.current) rotationRef.current.rotation.y += rotationSpeed
+const vert = /* glsl */ `
+  varying vec3 vNormal;
+  varying vec3 vLocalPos;
+  varying float vViewDist;
+
+  void main() {
+    vLocalPos = position;
+    vNormal   = normalize(normalMatrix * normal);
+    vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
+    vViewDist  = -mvPos.z;           // depth in view space (positive = away)
+    gl_Position = projectionMatrix * mvPos;
+  }
+`
+
+const frag = /* glsl */ `
+  varying vec3  vNormal;
+  varying vec3  vLocalPos;
+  varying float vViewDist;
+
+  uniform float uSeed;
+  uniform vec3  uFogColor;   // scene background colour to fade into
+  uniform float uFogNear;    // view-space depth where fog starts
+  uniform float uFogFar;     // view-space depth where fully fogged
+
+  // ── noise ──────────────────────────────────────────────────────────
+  float hash(vec3 p) {
+    p = fract(p * vec3(443.8975, 397.2973, 491.1871));
+    p += dot(p.zxy, p.yxz + 19.19);
+    return fract(p.x * p.y * p.z);
+  }
+  float noise(vec3 p) {
+    vec3 i = floor(p), f = fract(p);
+    vec3 u = f*f*(3.0-2.0*f);
+    return mix(
+      mix(mix(hash(i),             hash(i+vec3(1,0,0)),u.x),
+          mix(hash(i+vec3(0,1,0)), hash(i+vec3(1,1,0)),u.x),u.y),
+      mix(mix(hash(i+vec3(0,0,1)), hash(i+vec3(1,0,1)),u.x),
+          mix(hash(i+vec3(0,1,1)), hash(i+vec3(1,1,1)),u.x),u.y),
+      u.z);
+  }
+  float fbm(vec3 p) {
+    float v=0.0, a=0.5;
+    mat3 rot=mat3(0.0,0.8,0.6,-0.8,0.36,-0.48,-0.6,-0.48,0.64);
+    for(int i=0;i<6;i++){ v+=a*noise(p); p=rot*p*2.03+uSeed*0.31; a*=0.48; }
+    return v;
+  }
+
+  // sharp crater: raised rim + sunken floor
+  float crater(vec3 p, vec3 c, float r) {
+    float d   = distance(normalize(p), normalize(c));
+    float rim = smoothstep(r, r*0.72, d) * smoothstep(r*0.35, r*0.62, d);
+    float fl  = smoothstep(r*0.62, r*0.30, d);
+    return rim*0.22 - fl*0.10;
+  }
+
+  void main() {
+    vec3 p = normalize(vLocalPos);
+
+    // ── surface ─────────────────────────────────────────────────────
+    float surf = fbm(p*3.5+uSeed)
+               + fbm(p*9.0+uSeed*1.4)*0.40
+               + fbm(p*22.0+uSeed*2.1)*0.18;
+
+    float c = 0.0;
+    c += crater(p, vec3( 0.52+uSeed*0.01,  0.31, 0.80), 0.24);
+    c += crater(p, vec3(-0.63,  0.48+uSeed*0.02, 0.59), 0.16);
+    c += crater(p, vec3( 0.10, -0.72,  0.69-uSeed*0.01), 0.20);
+    c += crater(p, vec3(-0.28, -0.18,  0.94), 0.10);
+    c += crater(p, vec3( 0.71, -0.41,  0.57+uSeed*0.02), 0.13);
+    c += crater(p, vec3(-0.10,  0.82, -0.56), 0.09);
+
+    float warmBias = fbm(p*2.0+uSeed*0.5);
+    vec3  baseCol  = mix(vec3(0.15,0.16,0.20), vec3(0.22,0.19,0.16), warmBias);
+    float albedo   = clamp(surf*0.32+0.08+c, 0.0, 1.0);
+    vec3  surfCol  = baseCol * albedo;
+
+    // ── lighting ────────────────────────────────────────────────────
+    vec3 N = normalize(vNormal);
+
+    vec3  ambLight = vec3(0.10, 0.10, 0.13);
+
+    // Jumia orange rim
+    vec3  jumiaDir = normalize(vec3(-0.55,-0.25,0.80));
+    float jumiaRim = pow(max(0.0,1.0-dot(N,jumiaDir)),3.5);
+    vec3  jumiaCol = vec3(0.55,0.28,0.04)*jumiaRim*0.28;
+
+    // Jiji cyan rim
+    vec3  jijiDir  = normalize(vec3(0.70,0.10,0.72));
+    float jijiRim  = pow(max(0.0,1.0-dot(N,jijiDir)),3.5);
+    vec3  jijiCol  = vec3(0.04,0.38,0.42)*jijiRim*0.22;
+
+    // main fill
+    float diff    = max(dot(N, normalize(vec3(0.30,0.80,0.50))), 0.0);
+    float diffuse = diff*0.55+0.08;
+
+    vec3 col = surfCol*(ambLight*6.0+diffuse*3.5) + jumiaCol + jijiCol;
+    col = clamp(col, 0.0, 0.55);
+
+    // ── atmospheric depth fog ────────────────────────────────────────
+    // Blends planet into the background colour with distance so the
+    // silhouette softens and the body reads as far away, not pasted-on.
+    float fogT = smoothstep(uFogNear, uFogFar, vViewDist);
+    col = mix(col, uFogColor, fogT * 0.72);   // 0.72 → doesn't fully vanish
+
+    gl_FragColor = vec4(col, 1.0);
+  }
+`
+
+// ─── Dust halo shader (large soft billboard disc behind planet) ──────────────
+// Gives the impression of local nebula/dust density variation around the body.
+
+const haloVert = /* glsl */ `
+  varying vec2 vUv;
+  void main() {
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`
+
+const haloFrag = /* glsl */ `
+  varying vec2 vUv;
+  uniform vec3  uColor;
+  uniform float uOpacity;
+
+  float hash2(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+  }
+  float noise2(vec2 p) {
+    vec2 i = floor(p), f = fract(p);
+    vec2 u = f*f*(3.0-2.0*f);
+    return mix(mix(hash2(i),hash2(i+vec2(1,0)),u.x),
+               mix(hash2(i+vec2(0,1)),hash2(i+vec2(1,1)),u.x),u.y);
+  }
+  float fbm2(vec2 p) {
+    float v=0.0,a=0.5;
+    for(int i=0;i<4;i++){ v+=a*noise2(p); p=p*2.1+3.7; a*=0.5; }
+    return v;
+  }
+
+  void main() {
+    vec2  uv  = vUv - 0.5;             // centre at 0
+    float d   = length(uv);
+
+    // soft radial falloff — wide, very gentle
+    float radial = smoothstep(0.5, 0.05, d);
+
+    // patchy FBM mask so it's not a perfect circle
+    float dust = fbm2(vUv * 3.5) * 0.7 + 0.3;
+
+    float alpha = radial * dust * uOpacity;
+    gl_FragColor = vec4(uColor * 0.9, alpha);
+  }
+`
+
+// ─── Atmospheric rim (back-face shell) ───────────────────────────────────────
+
+const rimFrag = /* glsl */ `
+  varying vec3  vNormal;
+  uniform vec3  uGlowColor;
+  uniform float uOpacity;
+  void main() {
+    float rim = pow(1.0 - abs(dot(normalize(vNormal), vec3(0,0,1))), 3.2);
+    gl_FragColor = vec4(uGlowColor * rim, rim * uOpacity);
+  }
+`
+
+// ─── Moon component ───────────────────────────────────────────────────────────
+
+function Moon({ position, scale, seed, rotSpeed, glowColor, glowOpacity, dustColor, dustOpacity, fogColor }) {
+  const meshRef = useRef()
+
+  // fog depth is in view space; planets are ~160-180 units from camera origin
+  // (camera at z=88, planet at z=-180 → depth ≈ 268). Tune near/far around that.
+  const bodyUniforms = useMemo(() => ({
+    uSeed:    { value: seed },
+    uFogColor:{ value: new THREE.Color(fogColor) },
+    uFogNear: { value: 180 },
+    uFogFar:  { value: 320 },
+  }), [seed, fogColor])
+
+  const rimUniforms = useMemo(() => ({
+    uGlowColor: { value: new THREE.Color(glowColor) },
+    uOpacity:   { value: glowOpacity },
+  }), [glowColor, glowOpacity])
+
+  const dustUniforms = useMemo(() => ({
+    uColor:   { value: new THREE.Color(dustColor) },
+    uOpacity: { value: dustOpacity },
+  }), [dustColor, dustOpacity])
+
+  useFrame((_, delta) => {
+    if (meshRef.current) meshRef.current.rotation.y += rotSpeed * delta
   })
 
-  // Directional light offset to one side of the planet, angled so the
-  // sphere shows a clear lit hemisphere and a shadowed terminator —
-  // this is what actually reads as "a 3D sphere" rather than a flat
-  // textured disc. The previous version relied only on a colored
-  // pointLight matched to the glow color, which adds ambient-style
-  // fill but produces no real shading gradient across the surface.
-  //
-  // NOTE: a single "offset toward -x/+y/+z" formula happened to land
-  // well for Mars/Earth's positions but left Saturn (lower on the y
-  // axis, closer to the camera's own height) with its lit side facing
-  // away from where the camera actually views it, reading as dim/
-  // "faded" even though it wasn't fog — the light was just aimed
-  // wrong for that position. Aiming from the camera's general
-  // direction instead of a fixed offset keeps every planet's lit
-  // hemisphere facing the viewer regardless of where it sits.
-  const lightOffset = scale * 6
-  const lightPosition = [position[0] - lightOffset * 0.3, position[1] + lightOffset, position[2] + lightOffset * 1.2]
+  const haloSize = scale * 5.5  // dust halo is much wider than the sphere
 
   return (
-    <group>
-      <mesh ref={rotationRef} position={position} scale={scale}>
+    <group position={position}>
+      {/* dust/nebula halo — large soft disc behind the planet */}
+      <mesh position={[0, 0, -scale * 0.5]} renderOrder={-1}>
+        <planeGeometry args={[haloSize * 2, haloSize * 2]} />
+        <shaderMaterial
+          vertexShader={haloVert}
+          fragmentShader={haloFrag}
+          uniforms={dustUniforms}
+          transparent
+          depthWrite={false}
+        />
+      </mesh>
+
+      {/* planet body */}
+      <mesh ref={meshRef} scale={scale}>
         <sphereGeometry args={[1, 128, 128]} />
-        <meshStandardMaterial map={texture} roughness={0.75} metalness={0.05} envMapIntensity={0.6} />
+        <shaderMaterial vertexShader={vert} fragmentShader={frag} uniforms={bodyUniforms} />
       </mesh>
 
-      {/* Thin atmospheric rim, not a soft halo — previous shells (1.15x
-          at 0.15 opacity, 1.35x at 0.08 opacity) were large and soft
-          enough to read as a blurry glow circle rather than a crisp
-          planet edge. Tightened to a single close, subtle shell. */}
-      <mesh position={position} scale={[scale * 1.04, scale * 1.04, scale * 1.04]}>
-        <sphereGeometry args={[1, 64, 64]} />
-        <meshBasicMaterial color={glowColor} transparent opacity={0.18} depthWrite={false} side={THREE.BackSide} />
+      {/* thin atmospheric rim */}
+      <mesh scale={scale * 1.07}>
+        <sphereGeometry args={[1, 32, 32]} />
+        <shaderMaterial
+          vertexShader={vert}
+          fragmentShader={rimFrag}
+          uniforms={rimUniforms}
+          transparent
+          depthWrite={false}
+          side={THREE.BackSide}
+        />
       </mesh>
-
-      {/* Dedicated directional light for shading, separate from the
-          ambient glow-colored fill light below. */}
-      <directionalLight position={lightPosition} intensity={1.4} color="#ffffff" />
-
-      {/* Faint colored fill/rim light, kept but dialed down since it's
-          now a supplement to real shading rather than the only light
-          source. */}
-      <pointLight position={position} color={glowColor} intensity={glowIntensity * 0.9} distance={scale * 30} decay={2} />
     </group>
   )
 }
 
-function BackgroundPlanets() {
-  const mercuryRef = useRef()
-  const venusRef = useRef()
-  const earthRef = useRef()
-  const marsRef = useRef()
-  const jupiterRef = useRef()
-  const saturnRef = useRef()
+// ─── Scene ───────────────────────────────────────────────────────────────────
 
-  const planets = useMemo(
-    () => [
-      {
-        id: 'mercury',
-        ref: mercuryRef,
-        rotationSpeed: 0.0001,
-        // Bottom-left corner accent. Shifted +12x/-6z to track the
-        // camera target's move in the galaxy-radius/spacing pass
-        // (target went from x:41,z:-15 to x:53,z:-21) — same relative
-        // on-screen position, not re-guessed from scratch.
-        position: [-30, -26, -16],
-        scale: 10,
-        texturePath: 'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/moonmap1k.jpg',
-        glowColor: '#999999',
-        glowIntensity: 0.4,
-      },
-      {
-        id: 'venus',
-        ref: venusRef,
-        rotationSpeed: -0.00008,
-        // Repositioned from the old far-back spot (z:-136, y:60) which
-        // sat outside the default idle framing and only entered view
-        // during the closer fly-to-product zoom. Moved into the same
-        // proven-visible z/y range as Mars/Earth/moon/Saturn — upper
-        // empty area between the two galaxies.
-        position: [90, 42, -30],
-        scale: 9,
-        texturePath: 'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/venusmap.jpg',
-        glowColor: '#fbbf24',
-        glowIntensity: 0.6,
-      },
-      {
-        id: 'earth',
-        ref: earthRef,
-        rotationSpeed: 0.00012,
-        // Right edge accent. Pulled in from x:150 (which was clipping
-        // almost entirely off-frame) and enlarged so it reads clearly
-        // as a planet rather than a sliver.
-        position: [128, 22, -60],
-        scale: 12,
-        texturePath: 'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg',
-        glowColor: '#0ea5e9',
-        glowIntensity: 0.65,
-      },
-      {
-        id: 'mars',
-        ref: marsRef,
-        rotationSpeed: 0.00014,
-        position: [72, -40, -101],
-        scale: 11,
-        texturePath: 'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/marsmap1k.jpg',
-        glowColor: '#f87171',
-        glowIntensity: 0.5,
-      },
-      {
-        id: 'jupiter',
-        ref: jupiterRef,
-        rotationSpeed: 0.0002,
-        // Repositioned from the old far-back spot (z:-131) which sat
-        // outside default framing, same reasoning as Venus above.
-        // Placed in the empty middle-background gap between the two
-        // galaxies, distant enough (z:-90) to read as background scale
-        // despite the large radius.
-        // Moved right and back from the previous (10,-10,-90), which
-        // sat directly behind the hero text and dominated the left
-        // side of the frame. Now positioned as a background accent
-        // nearer the galaxies instead of overlapping the text panel.
-        position: [38, 8, -138],
-        scale: 16,
-        texturePath: 'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/jupitermap.jpg',
-        glowColor: '#fb923c',
-        glowIntensity: 0.7,
-      },
-      {
-        id: 'saturn',
-        ref: saturnRef,
-        rotationSpeed: 0.00009,
-        // New accent in the previously empty lower area below the
-        // text panel — same near-camera distance/scale range that
-        // proved to work for Mars and the moon (z around -20 to -101,
-        // scale 10-12), rather than guessing at Venus/Jupiter's far
-        // (z:-130+) positions which haven't been confirmed visible.
-        position: [-8, -48, 10],
-        scale: 10,
-        texturePath: 'https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/saturnmap.jpg',
-        glowColor: '#e8c88a',
-        glowIntensity: 0.55,
-      },
-    ],
-    []
-  )
+function BackgroundPlanets() {
+  // Scene bg colour — match Canvas background (#000008)
+  const FOG = '#000008'
+
+  const moons = useMemo(() => [
+    {
+      // Upper-right — push further right so it clips at edge, above Jiji
+      id: 'upper-right',
+      position: [145, 38, -180],
+      scale: 10,
+      seed: 7.13,
+      rotSpeed: 0.025,
+      glowColor:   '#0d3d4a',
+      glowOpacity: 0.20,
+      dustColor:   '#0a2535',
+      dustOpacity: 0.22,
+      fogColor:    FOG,
+    },
+    {
+      // Lower-right — small, bottom-right, more off-screen
+      id: 'lower-right',
+      position: [120, -55, -160],
+      scale: 6,
+      seed: 3.71,
+      rotSpeed: 0.038,
+      glowColor:   '#2a1405',
+      glowOpacity: 0.18,
+      dustColor:   '#1a0d04',
+      dustOpacity: 0.18,
+      fogColor:    FOG,
+    },
+    {
+      // Left accent — push fully off left edge, only a sliver visible
+      id: 'left-accent',
+      position: [-75, 5, -180],
+      scale: 5,
+      seed: 1.99,
+      rotSpeed: 0.045,
+      glowColor:   '#0a0a18',
+      glowOpacity: 0.12,
+      dustColor:   '#08080f',
+      dustOpacity: 0.10,
+      fogColor:    FOG,
+    },
+  ], [])
 
   return (
     <group>
-      {planets.map((planet) => (
-        <ImageErrorBoundary key={planet.id} fallback={null}>
-          <Suspense fallback={null}>
-            <Planet
-              rotationRef={planet.ref}
-              rotationSpeed={planet.rotationSpeed}
-              position={planet.position}
-              scale={planet.scale}
-              texturePath={planet.texturePath}
-              glowColor={planet.glowColor}
-              glowIntensity={planet.glowIntensity}
-            />
-          </Suspense>
-        </ImageErrorBoundary>
+      {moons.map((m) => (
+        <Moon key={m.id} {...m} />
       ))}
     </group>
   )
