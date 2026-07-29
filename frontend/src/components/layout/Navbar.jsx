@@ -9,21 +9,32 @@ function BellIcon() {
   )
 }
 
+function TrackIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 function Navbar({ transparent = false }) {
   return (
     <header className={`${styles.navbar} ${transparent ? styles.navbarTransparent : ''}`}>
       <div className={styles.left}>
-        <div className={styles.logoIcon}>✨</div>
+        <div className={styles.logoIcon}>✦</div>
         <span className={styles.logo}>Price Intelligence</span>
       </div>
       <nav className={styles.center}>
-        <a href="/" className={styles.navLink}>Home</a>
+        <a href="/" className={`${styles.navLink} ${styles.navLinkActive}`}>Home</a>
         <a href="#products" className={styles.navLink}>Products</a>
-        <a href="#" className={styles.navLink}>About Derin</a>
-        <a href="#" className={styles.navLink}>How it works</a>
+        <a href="#about" className={styles.navLink}>About</a>
+        <a href="#how-it-works" className={styles.navLink}>How it works</a>
       </nav>
       <div className={styles.right}>
-        <button className={styles.trackButton}>Wanna Track a Product?</button>
+        <button className={styles.trackButton}>
+          <TrackIcon />
+          Track a Product
+        </button>
         <button className={styles.bellButton} aria-label="Notifications">
           <BellIcon />
         </button>

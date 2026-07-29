@@ -18,11 +18,27 @@ function Dashboard() {
     )
   }, [products, search])
 
+  const count = filteredProducts?.length ?? 0
+
   return (
     <PageShell transparentNav>
       <Hero searchValue={search} onSearchChange={setSearch} />
       <FeatureStrip />
       <section id="products" className={styles.productsSection}>
+        <div className={styles.sectionHeader}>
+          <div>
+            <h2 className={styles.sectionTitle}>
+              {search.trim() ? 'Search results' : 'Tracked products'}
+            </h2>
+            <p className={styles.sectionSub}>
+              {isLoading
+                ? 'Loading…'
+                : search.trim()
+                  ? `${count} result${count === 1 ? '' : 's'} for “${search.trim()}”`
+                  : `${count} products across Jumia & Jiji`}
+            </p>
+          </div>
+        </div>
         <ProductList
           products={filteredProducts}
           isLoading={isLoading}

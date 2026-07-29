@@ -12,7 +12,7 @@ function Hero({ searchValue, onSearchChange }) {
       </div>
 
       <div className={styles.content}>
-        <span className={styles.eyebrow}>Welcome to Derin's</span>
+        <span className={styles.eyebrow}>Welcome to Derin&apos;s</span>
         <h1 className={styles.title}>
           Price
           <br />
@@ -25,12 +25,18 @@ function Hero({ searchValue, onSearchChange }) {
         </p>
         <SearchInput value={searchValue} onChange={onSearchChange} />
 
-        {/* Popular Searches - Shows when search is empty */}
         {!searchValue && (
           <PopularSearches onSearchSelect={onSearchChange} />
         )}
 
         <StatsCards />
+      </div>
+
+      <div className={styles.scrollCue}>
+        <span className={styles.scrollLabel}>Scroll to explore</span>
+        <svg className={styles.scrollArrow} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
     </section>
   )

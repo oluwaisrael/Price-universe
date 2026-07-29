@@ -60,7 +60,7 @@ function PriceUniverse({ searchValue = '' }) {
   return (
   <div className={styles.canvasWrapper}>
     <Canvas
-      camera={{ position: [30, 20, 88], fov: 50, far: 2000 }}
+      camera={{ position: [30, 45, 88], fov: 50, far: 2000 }}
       onPointerMissed={() => setSelectedId(null)}
       gl={{ antialias: true, alpha: false }}
     >
@@ -70,16 +70,16 @@ function PriceUniverse({ searchValue = '' }) {
       <DeepSpaceBackground3D />
 
         {/* Scene lighting */}
-        <ambientLight intensity={0.12} />
-        <hemisphereLight skyColor="#2a3a7f" groundColor="#050310" intensity={0.22} />
-        {/* Per-galaxy colored fill lights */}
+        <ambientLight intensity={0.07} />
+        <hemisphereLight skyColor="#1a2548" groundColor="#020208" intensity={0.14} />
+        {/* Per-galaxy fill — Jumia kept dimmer so hero text stays clear */}
         {Object.entries(galaxyCenters).map(([site, center]) => (
           <pointLight
             key={`fill-${site}`}
-            position={[center.x, 8, center.z]}
+            position={[center.x, site === 'Jumia' ? 6 : 8, center.z]}
             color={GALAXY_CORE_COLORS[site]}
-            intensity={0.6}
-            distance={55}
+            intensity={site === 'Jumia' ? 0.32 : 0.7}
+            distance={site === 'Jumia' ? 42 : 55}
             decay={2}
           />
         ))}
@@ -89,13 +89,16 @@ function PriceUniverse({ searchValue = '' }) {
         {/* Crack nebulas — fractal rifts of purple/violet gas across bg */}
 
         {/* Blackhole */}
-        <Blackhole position={[-52, 28, -82]} />
+        <Blackhole position={[-62, 32, -95]} />
 
         {/* Subtle teal atmosphere on right side (Jiji galaxy side) */}
-        <AmbientNebula position={[120, -10, -70]} color="#1a8899" radius={65} opacity={0.14} />
-        {/* Deep background bridge — very faint, doesn't read as colored,
-            just adds the sense of cosmic gas between the two galaxies */}
-        <AmbientNebula position={[galaxyMid.x, -6, galaxyMid.z - 20]} color="#220833" radius={95} opacity={0.09} />
+        <AmbientNebula position={[120, -10, -70]} color="#1a8899" radius={70} opacity={0.14} />
+        {/* Bridge haze kept very low so mid-field stays deep black */}
+        <AmbientNebula position={[galaxyMid.x, -6, galaxyMid.z - 20]} color="#2a1050" radius={100} opacity={0.09} />
+        {/* Far left purple depth (behind text, soft) */}
+        <AmbientNebula position={[-40, 10, -90]} color="#3a1870" radius={55} opacity={0.07} />
+        {/* Far right deep blue */}
+        <AmbientNebula position={[160, -20, -100]} color="#0a4060" radius={60} opacity={0.10} />
 
         {/* ── PRIMARY GALAXY DISCS ────────────────────────────────────
             Rendered FIRST so everything else (particles, core, cards)
@@ -124,7 +127,7 @@ function PriceUniverse({ searchValue = '' }) {
             center={center}
             color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
             radius={galaxyRadius * 0.9}
-            opacity={0.65}
+            opacity={site === 'Jumia' ? 0.48 : 0.72}
           />
         ))}
         {Object.entries(galaxyCenters).map(([site, center]) => (
@@ -132,8 +135,8 @@ function PriceUniverse({ searchValue = '' }) {
             key={`corona-${site}`}
             position={[center.x, 0, center.z]}
             color={GALAXY_CORE_COLORS[site] ?? '#ffffff'}
-            radius={galaxyRadius * 1.8}
-            opacity={0.10}
+            radius={galaxyRadius * (site === 'Jumia' ? 1.45 : 1.75)}
+            opacity={site === 'Jumia' ? 0.05 : 0.09}
           />
         ))}
 
@@ -183,14 +186,14 @@ function PriceUniverse({ searchValue = '' }) {
               bloom but the faint haze layers do not, keeping the disc
               structure visible rather than one uniform glow. */}
           <Bloom
-            intensity={1.4}
-            luminanceThreshold={0.30}
+            intensity={1.75}
+            luminanceThreshold={0.26}
             luminanceSmoothing={0.88}
             mipmapBlur
-            radius={0.88}
+            radius={1.0}
           />
-          <Noise opacity={0.04} />
-          <Vignette eskil={false} offset={0.10} darkness={0.72} />
+          <Noise opacity={0.035} />
+          <Vignette eskil={false} offset={0.12} darkness={0.68} />
         </EffectComposer>
       </Canvas>
 

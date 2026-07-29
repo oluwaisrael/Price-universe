@@ -1,16 +1,45 @@
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
   width: 100%;
 }
 
 .empty {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 0.5rem;
   width: 100%;
-  padding: 3rem 1rem;
-  opacity: 0.6;
+  padding: 4rem 1.5rem;
   text-align: center;
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.emptyIcon {
+  color: rgba(245, 245, 245, 0.25);
+  margin-bottom: 0.5rem;
+}
+
+.emptyTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(245, 245, 245, 0.75);
+}
+
+.emptyHint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: rgba(245, 245, 245, 0.4);
+}
+
+@media (max-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
 }

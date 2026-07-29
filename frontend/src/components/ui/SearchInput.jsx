@@ -1,6 +1,6 @@
 import styles from './SearchInput.module.css'
 
-function SearchInput({ value, onChange, placeholder = 'Search a product or paste a Jumia/Jiji URL' }) {
+function SearchInput({ value, onChange, placeholder = 'Search for a product...' }) {
   const handleClear = () => {
     onChange('')
   }

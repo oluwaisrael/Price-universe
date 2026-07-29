@@ -22,7 +22,8 @@ function BellIcon() {
 function TrendIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M3 21v-7m6 7v-4m6 4v-9m6 9V8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 17l6-6 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 7h7v7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -33,27 +34,30 @@ const STATS = [
     icon: CubeIcon,
     value: '12,543',
     label: 'Products tracked',
+    accent: 'purple',
   },
   {
     id: 'drops',
     icon: BellIcon,
     value: '2,341',
     label: 'Price drops today',
+    accent: 'orange',
   },
   {
     id: 'accuracy',
     icon: TrendIcon,
     value: '98%',
     label: 'Accuracy rate',
+    accent: 'teal',
   },
 ]
 
 function StatsCards() {
   return (
     <div className={styles.container}>
-      {STATS.map(({ id, icon: Icon, value, label }) => (
+      {STATS.map(({ id, icon: Icon, value, label, accent }) => (
         <div key={id} className={styles.card}>
-          <div className={styles.icon}>
+          <div className={`${styles.icon} ${styles[`icon_${accent}`]}`}>
             <Icon />
           </div>
           <div className={styles.content}>

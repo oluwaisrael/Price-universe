@@ -18,8 +18,7 @@ import * as THREE from 'three'
  * viewport as a solid orange/teal wall. Capped at 1.2.
  */
 
-const DISC_TILT_RAD = (62 * Math.PI) / 180
-const DISC_YAW_RAD  = (25 * Math.PI) / 180
+const DISC_TILT_RAD = (42 * Math.PI) / 180
 
 function makeDiscTex({
   size      = 512,
@@ -75,38 +74,16 @@ function makeDiscTex({
 }
 
 const LAYERS = [
-  // Outermost corona — capped at 1.2x (was 2.4x, way too large)
-  { sxMult: 1.2, opacity: 0.20, texOpts: { noiseStr: 0.92, noiseSeed: 1, corePow: 1.0, baseAlpha: 0.45, rings: [] } },
-  // Main body glow
-  { sxMult: 1.0, opacity: 0.45, texOpts: { noiseStr: 0.75, noiseSeed: 2, corePow: 1.5, baseAlpha: 0.70, rings: [] } },
-  // Outer ring bands — spiral arms seen at angle
-  {
-    sxMult: 0.9, opacity: 0.55,
-    texOpts: { noiseStr: 0.50, noiseSeed: 3, corePow: 2.0, baseAlpha: 0.55,
-      rings: [
-        { r: 0.88, width: 0.055, alpha: 0.50 },
-        { r: 0.74, width: 0.065, alpha: 0.55 },
-        { r: 0.60, width: 0.075, alpha: 0.60 },
-      ],
-    },
-  },
-  // Inner ring bands — brighter, tighter
-  {
-    sxMult: 0.75, opacity: 0.65,
-    texOpts: { noiseStr: 0.38, noiseSeed: 4, corePow: 2.6, baseAlpha: 0.68,
-      rings: [
-        { r: 0.46, width: 0.085, alpha: 0.68 },
-        { r: 0.30, width: 0.095, alpha: 0.72 },
-        { r: 0.16, width: 0.10,  alpha: 0.62 },
-      ],
-    },
-  },
-  // Core transition
-  { sxMult: 0.42, opacity: 0.78, texOpts: { noiseStr: 0.18, noiseSeed: 5, corePow: 3.5, baseAlpha: 0.88, rings: [] } },
-  // Nucleus corona
-  { sxMult: 0.18, opacity: 0.30, texOpts: { noiseStr: 0.06, noiseSeed: 6, corePow: 5.0, baseAlpha: 0.48, rings: [] } },
-  // White-hot nucleus — Bloom blows this into a wide halo
-  { sxMult: 0.06, opacity: 0.30,  texOpts: { noiseStr: 0.0,  noiseSeed: 7, corePow: 7.0, baseAlpha: 0.48, rings: [] } },
+  // Soft outer wash under particle arms (not a solid disc)
+  { sxMult: 1.0, opacity: 0.08, texOpts: { noiseStr: 0.9, noiseSeed: 1, corePow: 1.35, baseAlpha: 0.30, rings: [] } },
+  // Mid under-glow
+  { sxMult: 0.78, opacity: 0.18, texOpts: { noiseStr: 0.65, noiseSeed: 2, corePow: 1.9, baseAlpha: 0.42, rings: [] } },
+  // Core transition — ~12% larger than previous thin-arm pass
+  { sxMult: 0.38, opacity: 0.88, texOpts: { noiseStr: 0.12, noiseSeed: 5, corePow: 3.6, baseAlpha: 0.92, rings: [] } },
+  // Hot nucleus
+  { sxMult: 0.18, opacity: 0.70, texOpts: { noiseStr: 0.04, noiseSeed: 6, corePow: 5.2, baseAlpha: 0.65, rings: [] } },
+  // Bright core pin — bloom expands this
+  { sxMult: 0.07, opacity: 0.72, texOpts: { noiseStr: 0.0, noiseSeed: 7, corePow: 7.5, baseAlpha: 0.72, rings: [] } },
 ]
 
 function GalaxyDisc({ center, color, radius }) {
@@ -129,32 +106,35 @@ function GalaxyDisc({ center, color, radius }) {
   })
 
   return (
-  <group position={[center.x, 0, center.z]} rotation={[0, DISC_YAW_RAD, 0]}>
-    {LAYERS.map((layer, i) => {
-      const d = radius * layer.sxMult * 2
-      return (
-        <mesh
-          key={i}
-          ref={(el) => { meshRefs.current[i] = el }}
-          position={[0, -0.5 + i * 0.06, 0]}
-          rotation={new THREE.Euler(-DISC_TILT_RAD, 0, 0)}
-        >
-          <planeGeometry args={[d, d]} />
-          <meshBasicMaterial
-            map={textures[i]}
-            color={col}
-            transparent
-            opacity={layer.opacity}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            toneMapped={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      )
-    })}
-  </group>
-)
+    <group>
+      {LAYERS.map((layer, i) => {
+        const d = radius * layer.sxMult * 2
+        return (
+          <mesh
+            key={i}
+            ref={(el) => { meshRefs.current[i] = el }}
+            position={[center.x, -0.5 + i * 0.06, center.z]}
+            // NEGATIVE tilt — matches tiltDiscPoint() positive-X convention.
+            // Positive rotation here tilted the disc the wrong way,
+            // producing the massive orange wedge filling the viewport.
+            rotation={[-DISC_TILT_RAD, 0, 0]}
+          >
+            <planeGeometry args={[d, d]} />
+            <meshBasicMaterial
+              map={textures[i]}
+              color={col}
+              transparent
+              opacity={layer.opacity}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+              toneMapped={false}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        )
+      })}
+    </group>
+  )
 }
 
 export default GalaxyDisc

@@ -13,9 +13,9 @@ const SITE_COLORS = {
 // stays close to each core, so the open black space between and
 // around the two galaxies was reading as empty; this fills it in
 // without competing with either galaxy's color identity.
-const AMBIENT_DUST_COUNT = 320
-const AMBIENT_DUST_SPREAD_X = 70
-const AMBIENT_DUST_SPREAD_Z = 55
+const AMBIENT_DUST_COUNT = 400
+const AMBIENT_DUST_SPREAD_X = 55
+const AMBIENT_DUST_SPREAD_Z = 42
 const AMBIENT_DUST_HEIGHT = 12
 
 function hashToUnitLocal(str) {
@@ -234,12 +234,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.78}
+          size={1.25}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.68}
+          opacity={0.72}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -295,12 +295,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={0.34}
+          size={0.42}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.45}
+          opacity={0.40}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -335,7 +335,7 @@ function GalaxyStarfield() {
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.62}
+          opacity={0.38}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -359,12 +359,12 @@ function GalaxyStarfield() {
           />
         </bufferGeometry>
         <pointsMaterial
-          size={1.4}
+          size={1.2}
           vertexColors
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.32}
+          opacity={0.24}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}
@@ -398,7 +398,7 @@ function GalaxyStarfield() {
           map={softTexture}
           alphaMap={softTexture}
           transparent
-          opacity={0.34}
+          opacity={0.40}
           sizeAttenuation
           depthWrite={false}
           blending={THREE.AdditiveBlending}

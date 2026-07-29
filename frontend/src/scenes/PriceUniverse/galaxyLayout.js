@@ -37,8 +37,8 @@ const GALAXY_CENTERS = {
   // Nudged +6x/-4z from (14,-9) — a small shift to ease Jumia's outer
   // ring overlapping the hero text/search bar, without moving the
   // whole camera again (a full pan previously overcorrected badly).
-  Jumia: { x: 50, z: -13 },
-  Jiji: { x: 88, z: 8 },
+  Jumia: { x: 20, z: -13 },
+  Jiji: { x: 92, z: -34 },
 }
 const DEFAULT_GALAXY_CENTER = { x: 0, z: 0 }
 
@@ -57,12 +57,12 @@ const CORE_RADIUS = 0.3
 // same arms the dust particles trace — previously this was 2 while
 // dust used 5, meaning products only ever emerged from 2 of the 5
 // visible arms instead of naturally distributing across all of them.
-const ARM_COUNT = 17
+const ARM_COUNT = 4
 // Visual-only arm count for the decorative dust bands. Kept equal to
 // ARM_COUNT (both 6 now) so real product nodes and dust trace the
 // same 6 arms — bumped from 5 to 6 for a slightly denser, more
 // classic grand-design spiral silhouette.
-const VISUAL_ARM_COUNT = 17
+const VISUAL_ARM_COUNT = 4
 // Increased from 1.35 to 2.1 — at the scene's fairly shallow camera
 // pitch, 1.35 turns read mostly as radial scatter/a fan rather than a
 // visible curved arm. More winding makes the pinwheel shape legible
@@ -76,7 +76,7 @@ const VISUAL_ARM_COUNT = 17
 // Real spiral galaxies read clearly around 0.5-1.2 turns; 0.85 keeps
 // visible curvature while letting arms separate cleanly as radius
 // grows, instead of overlapping.
-const SPIRAL_TURNS = 1.6
+const SPIRAL_TURNS = 1.05
 // Narrower band off the arm centerline — 0.5 was wide enough that
 // filler stars smeared across neighboring arms instead of tracing a
 // crisp line.
@@ -85,8 +85,8 @@ const SPIRAL_TURNS = 1.6
 // glow sprites (larger, blended, semi-transparent), a scatter that
 // narrow left visible dark seams between arms; this width lets
 // neighboring sprites overlap into one continuous luminous band.
-const ARM_SCATTER = 0.4
-const VERTICAL_SCATTER = 0.35 // small y-jitter so the disc isn't perfectly flat
+const ARM_SCATTER = 1.35
+const VERTICAL_SCATTER = 0.85 // small y-jitter so the disc isn't perfectly flat
 
 // The default camera sits at a shallow ~15° pitch (see CameraRig's
 // DEFAULT_CAMERA_POSITION, y=16 over a ~58-unit radius) and per user
@@ -107,26 +107,17 @@ const VERTICAL_SCATTER = 0.35 // small y-jitter so the disc isn't perfectly flat
 // targets should stay exactly where their price-driven height (y)
 // places them — only the purely decorative filler stars / haze /
 // core / rings get tilted, which is enough to sell the spiral shape.
-const DISC_TILT_RAD = (62 * Math.PI) / 180   // flatter ellipse
-const DISC_YAW_RAD  = (25 * Math.PI) / 180   // diagonal lean direction
-// Replace tiltDiscPoint entirely:
+const DISC_TILT_RAD = (42 * Math.PI) / 180  // Matched to GalaxyDisc.jsx — particles and disc plane now align
+
 function tiltDiscPoint(x, y, z) {
-  // Step 1: X-axis tilt (disc inclination — makes it an ellipse)
-  const cx = Math.cos(DISC_TILT_RAD), sx = Math.sin(DISC_TILT_RAD)
+  const cos = Math.cos(DISC_TILT_RAD)
+  const sin = Math.sin(DISC_TILT_RAD)
   return {
-    x: x1,
-    y: y1 * cx - z1 * sx,
-    z: y1 * sx + z1 * cx,
+    x,
+    y: y * cos - z * sin,
+    z: y * sin + z * cos,
   }
 }
-
-  // Step 2: Y-axis yaw (rotates the lean direction — gives the ⟋ angle)
-    const cy = Math.cos(DISC_YAW_RAD), sy = Math.sin(DISC_YAW_RAD)
-    const x1 =  x * cy + z * sy
-    const y1 =  y
-    const z1 = -x * sy + z * cy
-    
-
 
 function hashToUnit(str) {
   let h = 2166136261
@@ -195,43 +186,32 @@ function spiralPosition(id, index, total = 1) {
   // members of a group share the same bias vector.
   const groupSize = 5
   const groupId = Math.floor(index / groupSize)
-  const groupAngleBias = (hashToUnit(`${id}-grp-${groupId}-a`) - 0.5) * 1.4
-  const groupRadialBias = (hashToUnit(`${id}-grp-${groupId}-r`) - 0.5) * GALAXY_RADIUS * 0.12
+  const groupAngleBias = (hashToUnit(`${id}-grp-${groupId}-a`) - 0.5) * 0.35
+  const groupRadialBias = (hashToUnit(`${id}-grp-${groupId}-r`) - 0.5) * GALAXY_RADIUS * 0.04
 
   // Individual angular jitter ON TOP of the group bias — members
   // within the same group spread slightly around their shared anchor
   // so the cluster feels organic, not stacked on a single point.
-  const angleJitter = (hashToUnit(`${index}-${id}-angjit`) - 0.5) * 1.1
+  const angleJitter = (hashToUnit(`${index}-${id}-angjit`) - 0.5) * 0.25
   const angle = armOffset + logProgress * SPIRAL_TURNS * Math.PI * 2 + groupAngleBias + angleJitter
 
   const baseX = Math.cos(angle) * (radius + groupRadialBias)
   const baseZ = Math.sin(angle) * (radius + groupRadialBias)
 
-  // Wide Gaussian scatter so products spread naturally through the
-  // galaxy volume — not on a single arm spline. Overlap allowed:
-  // the scatterAmount is intentionally large enough that products
-  // from adjacent arms can land near each other, exactly like stars
-  // embedded in an arm's local volume rather than evenly attached
-  // to a visible curve.
+  // Products embedded in the thick arm cloud (wide Gaussian), not on
+  // a thin ribbon and not fully random between arms.
   const productGaussian = gaussianFromSeed(`${index}-${id}-pscatter`)
-  const scatterAmount = ARM_SCATTER * (1.8 + 2.8 * tRadius)
+  const scatterAmount = ARM_SCATTER * (0.9 + 1.4 * tRadius)
   const perpAngle = angle + Math.PI / 2
-  const scatter = productGaussian * scatterAmount * 0.65
+  const scatter = productGaussian * scatterAmount * 0.6
 
-  // Larger radial jitter than previous pass — products can land
-  // noticeably inside or outside their nominal arm radius, which is
-  // what breaks the "products attached to the arm spline" look.
-  const radialJitter = (hashToUnit(`${index}-${id}-rjit`) - 0.5) * 2 * (GALAXY_RADIUS * 0.07)
+  const radialJitter = (hashToUnit(`${index}-${id}-rjit`) - 0.5) * 2 * (GALAXY_RADIUS * 0.04)
 
   const x = baseX + Math.cos(perpAngle) * scatter + Math.cos(angle) * radialJitter
   const z = baseZ + Math.sin(perpAngle) * scatter + Math.sin(angle) * radialJitter
 
-  // Aggressive Z (disc-thickness) depth for 3D embeddedness — products
-  // should feel scattered through the disc volume, some partially
-  // behind bloom/dust. 3.5× VERTICAL_SCATTER (was 2.6×) pushes more
-  // products clearly above/below the disc midplane so they visually
-  // layer with the surrounding stars instead of all sitting on one plane.
-  const localDepthJitter = (hashToUnit(`${index}-${id}-y`) - 0.5) * 2 * VERTICAL_SCATTER * 3.5
+  // Thickness through the disc so cards sit among stars, not on a plane
+  const localDepthJitter = (hashToUnit(`${index}-${id}-y`) - 0.5) * 2 * VERTICAL_SCATTER * 2.4
 
   const tilted = tiltDiscPoint(x, localDepthJitter, z)
 
@@ -343,7 +323,7 @@ export function getDiscTiltRadians() {
 // visible gaps between neighboring arms once rendered as soft glow
 // sprites instead of hard dots (sprites need overlap to blend into a
 // continuous band; hard dots could get away with less coverage).
-const FILLER_STARS_PER_ARM = 3000
+const FILLER_STARS_PER_ARM = 7500
 const HAZE_POINTS_PER_GALAXY = 500
 const CORE_DUST_POINTS_PER_GALAXY = 1000
 const CORE_DUST_MAX_RADIUS_FRACTION = 0.22
@@ -404,14 +384,14 @@ function tieredScale(seed, tinyRange = [0.06, 0.22], medRange = [0.22, 0.52], br
 // the arm dust but far fewer, low-opacity — this is what kills the
 // "obviously empty gap between two clean lines" look without adding
 // any new arms or increasing overall galaxy size.
-const INTERARM_DUST_POINTS_PER_GALAXY = 20000
+const INTERARM_DUST_POINTS_PER_GALAXY = 18000
 
 // Faint outer halo — a sparse, roughly-spherical (not disc-flat) shell
 // of very dim points surrounding the whole galaxy, well past
 // GALAXY_RADIUS. Real spiral galaxies sit inside a diffuse stellar
 // halo; this is a separate, lower-density layer from the disc-hugging
 // HAZE_POINTS_PER_GALAXY above (which stays close to the disc plane).
-const HALO_POINTS_PER_GALAXY = 8000
+const HALO_POINTS_PER_GALAXY = 6000
 const HALO_MIN_RADIUS_FRACTION = 1.0
 const HALO_MAX_RADIUS_FRACTION = 1.8
 
@@ -424,7 +404,7 @@ const HALO_MAX_RADIUS_FRACTION = 1.8
 // Deliberately the largest single population and deliberately the
 // dimmest — bulk coverage, near-invisible individually, additive in
 // aggregate.
-const DIFFUSE_DISC_POINTS_PER_GALAXY = 55000
+const DIFFUSE_DISC_POINTS_PER_GALAXY = 32000
 
 
 export function generateFillerStars() {
@@ -448,7 +428,7 @@ export function generateFillerStars() {
         0.2 + hashToUnit(`gap0-${site}-${arm}`) * 0.25,
         0.55 + hashToUnit(`gap1-${site}-${arm}`) * 0.3,
       ]
-      const gapWidth = 0.06
+      const gapWidth = 0.04
 
       for (let i = 0; i < FILLER_STARS_PER_ARM; i++) {
         const seed = `filler-${site}-${arm}-${i}`
@@ -494,11 +474,12 @@ export function generateFillerStars() {
         // the arm visibly thicken through the whole outer half, while
         // the spiral's angle/radius placement itself is untouched.
         const coreBlend = 1 - Math.min(t / 0.15, 1)
-        const widthT = 0.4 + 0.9 * t + 0.35 * t * t
-        const scatterAmount = ARM_SCATTER * widthT * (1 + coreBlend * 1.8)
+        // Wide cloud: bright ridge + dense shoulders + soft diffuse fringe
+        const widthT = 1.2 + 1.8 * t + 0.9 * t * t
+        const scatterAmount = ARM_SCATTER * widthT * (1 + coreBlend * 1.4)
         const perpAngle = branchAngle + Math.PI / 2
         const gaussian = gaussianFromSeed(seed)
-        const scatter = gaussian * scatterAmount * 0.5
+        const scatter = gaussian * scatterAmount * 0.55 + (hashToUnit(`${seed}-broad`) - 0.5) * 2 * scatterAmount * 0.35
 
         const x = baseX + Math.cos(perpAngle) * scatter
         const z = baseZ + Math.sin(perpAngle) * scatter
@@ -514,7 +495,7 @@ export function generateFillerStars() {
         // probabilistic check so gaps read as organic thinning.
         const densityBulge = Math.sin(t * Math.PI * 0.9 + 0.15) * 0.5 + 0.5
         const nearGap = gapCenters.some((gc) => Math.abs(t - gc) < gapWidth)
-        const gapSuppression = nearGap ? 0.35 : 1
+        const gapSuppression = nearGap ? 0.75 : 1
         const keepThreshold = (0.3 + densityBulge * 0.7) * gapSuppression
         const included = hashToUnit(`${seed}-keep`) < keepThreshold
         if (!included) continue

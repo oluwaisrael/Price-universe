@@ -3,8 +3,9 @@ import styles from './FeatureStrip.module.css'
 function RealtimeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <circle cx="12" cy="12" r="9" />
-      <path d="M12 7v5l4 2" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M12 2L2 7v10l10 5 10-5V7l-10-5z" />
+      <path d="M2 7l10 5v10" />
+      <path d="M12 12v10M22 7l-10 5v10" />
     </svg>
   )
 }
@@ -21,7 +22,8 @@ function BellIcon() {
 function ChartIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M3 21v-7m6 7v-4m6 4v-9m6 9V8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M3 17l6-6 4 4 8-8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14 7h7v7" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -29,47 +31,68 @@ function ChartIcon() {
 function BrainIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2m0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8m3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z" />
+      <path
+        d="M12 4a4 4 0 0 0-4 4c0 1.1.4 2.1 1.1 2.8A4 4 0 0 0 8 14c0 1.5.8 2.8 2 3.5V20h4v-2.5c1.2-.7 2-2 2-3.5a4 4 0 0 0-1.1-2.7A4 4 0 0 0 16 8a4 4 0 0 0-4-4z"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path d="M9 10h.01M15 10h.01" strokeLinecap="round" />
     </svg>
   )
 }
 
 function PriceChartSparkline() {
   return (
-    <svg viewBox="0 0 100 40" className={styles.miniChart}>
+    <svg viewBox="0 0 100 36" className={styles.miniChart} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="gradientChart" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#a78bfa" stopOpacity="0.35" />
+        </linearGradient>
+        <linearGradient id="fillChart" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#a78bfa" stopOpacity="0.2" />
+          <stop offset="100%" stopColor="#a78bfa" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon
+        points="0,36 0,28 10,24 20,26 30,18 40,20 50,12 60,15 70,9 80,11 90,5 100,7 100,36"
+        fill="url(#fillChart)"
+      />
       <polyline
-        points="0,30 10,25 20,28 30,20 40,22 50,15 60,18 70,12 80,14 90,8 100,10"
+        points="0,28 10,24 20,26 30,18 40,20 50,12 60,15 70,9 80,11 90,5 100,7"
         fill="none"
         stroke="url(#gradientChart)"
         strokeWidth="2"
         vectorEffect="non-scaling-stroke"
       />
-      <defs>
-        <linearGradient id="gradientChart" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#ff9900" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#ff9900" stopOpacity="0.3" />
-        </linearGradient>
-      </defs>
     </svg>
   )
 }
 
 function TrendingChart() {
   return (
-    <svg viewBox="0 0 100 40" className={styles.miniChart}>
+    <svg viewBox="0 0 100 36" className={styles.miniChart} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="gradientTrend" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" stopColor="#22e5e5" stopOpacity="0.9" />
+          <stop offset="100%" stopColor="#22e5e5" stopOpacity="0.35" />
+        </linearGradient>
+        <linearGradient id="fillTrend" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#22e5e5" stopOpacity="0.18" />
+          <stop offset="100%" stopColor="#22e5e5" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon
+        points="0,36 0,32 15,26 30,20 45,16 60,11 75,7 90,4 100,2 100,36"
+        fill="url(#fillTrend)"
+      />
       <polyline
-        points="0,35 15,28 30,22 45,18 60,12 75,8 90,5 100,3"
+        points="0,32 15,26 30,20 45,16 60,11 75,7 90,4 100,2"
         fill="none"
         stroke="url(#gradientTrend)"
         strokeWidth="2"
         vectorEffect="non-scaling-stroke"
       />
-      <defs>
-        <linearGradient id="gradientTrend" x1="0%" y1="0%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#22e5e5" stopOpacity="0.8" />
-          <stop offset="100%" stopColor="#22e5e5" stopOpacity="0.3" />
-        </linearGradient>
-      </defs>
     </svg>
   )
 }
@@ -79,7 +102,8 @@ const FEATURES = [
     id: 'realtime',
     icon: RealtimeIcon,
     title: 'Real-time Tracking',
-    description: 'We track prices 24/7 across Jumia and Jiji so you don\'t have to.',
+    description: "We track prices 24/7 across Jumia and Jiji so you don't have to.",
+    accent: 'purple',
     demo: 'chart',
   },
   {
@@ -87,20 +111,23 @@ const FEATURES = [
     icon: BellIcon,
     title: 'Price Drop Alerts',
     description: 'Get instant notifications when prices drop on products you care about.',
+    accent: 'orange',
     demo: 'alert',
   },
   {
     id: 'history',
     icon: ChartIcon,
     title: 'Price History',
-    description: 'View  price history and trends to buy at the very perfect time.',
-    demo: 'chart',
+    description: 'View detailed price history and trends to buy at the perfect time.',
+    accent: 'teal',
+    demo: 'history',
   },
   {
     id: 'ai',
     icon: BrainIcon,
     title: 'AI Predictions',
-    description: 'Derin\'s AI analyzes trends to predict future price movements.',
+    description: 'Our AI analyzes trends to predict future price movements.',
+    accent: 'violet',
     demo: 'prediction',
   },
 ]
@@ -108,57 +135,59 @@ const FEATURES = [
 function FeatureStrip() {
   return (
     <section className={styles.strip} aria-label="Key features">
-      <div className={styles.header}>
-        <h2 className={styles.heading}>Derin's helping you make smarter decisions.</h2>
-        <p className={styles.subheading}>
-          Giving you everything you need to track prices
-        </p>
-      </div>
+      <div className={styles.panel}>
+        <div className={styles.header}>
+          <h2 className={styles.heading}>Powerful insights. Smarter decisions.</h2>
+          <p className={styles.subheading}>
+            Everything you need to track prices and save money
+          </p>
+        </div>
 
-      <div className={styles.grid}>
-        {FEATURES.map(({ id, icon: Icon, title, description, demo }) => (
-          <div key={id} className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardIcon}>
-                <Icon />
+        <div className={styles.grid}>
+          {FEATURES.map(({ id, icon: Icon, title, description, accent, demo }) => (
+            <div key={id} className={`${styles.card} ${styles[`card_${accent}`]}`}>
+              <div className={styles.cardHeader}>
+                <div className={`${styles.cardIcon} ${styles[`icon_${accent}`]}`}>
+                  <Icon />
+                </div>
+                <h3 className={styles.cardTitle}>{title}</h3>
               </div>
-              <h3 className={styles.cardTitle}>{title}</h3>
-            </div>
 
-            <p className={styles.cardDescription}>{description}</p>
+              <p className={styles.cardDescription}>{description}</p>
 
-            <div className={styles.demo}>
-              {demo === 'chart' && id === 'realtime' && (
-                <div className={styles.demoContent}>
-                  <PriceChartSparkline />
-                  <span className={styles.demoLabel}>-12%</span>
-                </div>
-              )}
-
-              {demo === 'alert' && (
-                <div className={styles.alertDemo}>
-                  <div className={styles.alertIcon}>🔔</div>
-                  <div className={styles.alertText}>
-                    <div className={styles.alertTitle}>Derin said iPhone 17 dropped to ₦420,000</div>
+              <div className={styles.demo}>
+                {demo === 'chart' && (
+                  <div className={styles.demoContent}>
+                    <PriceChartSparkline />
+                    <span className={`${styles.demoBadge} ${styles.badge_purple}`}>-12%</span>
                   </div>
-                </div>
-              )}
+                )}
 
-              {demo === 'chart' && id === 'history' && (
-                <div className={styles.demoContent}>
-                  <TrendingChart />
-                </div>
-              )}
+                {demo === 'alert' && (
+                  <div className={styles.alertDemo}>
+                    <span className={styles.alertIcon} aria-hidden>🔔</span>
+                    <span className={styles.alertText}>
+                      iPhone 13 dropped to ₦420,000
+                    </span>
+                  </div>
+                )}
 
-              {demo === 'prediction' && (
-                <div className={styles.predictionDemo}>
-                  <span className={styles.predLabel}>Likely to drop</span>
-                  <span className={styles.predValue}>X%</span>
-                </div>
-              )}
+                {demo === 'history' && (
+                  <div className={styles.demoContent}>
+                    <TrendingChart />
+                  </div>
+                )}
+
+                {demo === 'prediction' && (
+                  <div className={styles.predictionDemo}>
+                    <span className={styles.predLabel}>Likely to drop</span>
+                    <span className={styles.predValue}>87%</span>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   )

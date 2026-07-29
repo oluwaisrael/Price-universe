@@ -2,34 +2,26 @@ import { Billboard, Html } from '@react-three/drei'
 import styles from './GalaxyLabel.module.css'
 
 /**
- * GalaxyLabel — floating name + product-count label above each
- * galaxy core (design reference panel 01: "JUMIA GALAXY — 48
- * products", colored to match that galaxy's tint). Purely
- * decorative/informational, no interaction.
- *
- * count comes from the real fetched node list (filtered by site) via
- * the caller — not hardcoded, so it stays accurate as products are
- * added/removed server-side.
+ * GalaxyLabel — floating name + product-count above each galaxy core.
+ * Matches design reference: "JUMIA GALAXY" / "8,742 PRODUCTS" in
+ * marketplace tint. Count comes from the live node list.
  */
 function GalaxyLabel({ center, site, count, color, galaxyRadius = 20 }) {
-  // Height now scales with galaxyRadius (was a flat 5.5, tuned back
-  // when GALAXY_RADIUS was 13) — at the larger radius from the
-  // composition pass, a fixed height no longer cleared the top of the
-  // tilted disc, so the label sat inside the star clutter instead of
-  // floating clearly above it like the reference's section-header feel.
-  // Sits above MAX_HEIGHT (4.5, galaxyLayout.js's price-height ceiling)
-  // so it clears the highest product nodes, without floating so high
-  // it looks disconnected from the galaxy below it.
-  const position = [center.x, 6.5, center.z]
+  // Sits above MAX_HEIGHT (4.5) so it clears product nodes, scaled
+  // slightly with radius so larger discs don't swallow the label.
+  const y = Math.max(7.2, galaxyRadius * 0.28)
+  const position = [center.x, y, center.z]
+
+  const formattedCount = new Intl.NumberFormat('en-US').format(count ?? 0)
 
   return (
     <Billboard position={position}>
-      <Html center distanceFactor={22} occlude={false}>
+      <Html center distanceFactor={20} occlude={false} zIndexRange={[50, 0]}>
         <div className={styles.label}>
-          <span className={styles.name} style={{ color }}>
+          <span className={styles.name} style={{ color, textShadow: `0 0 24px ${color}, 0 2px 8px rgba(0,0,0,0.9)` }}>
             {site.toUpperCase()} GALAXY
           </span>
-          <span className={styles.count}>{count} products</span>
+          <span className={styles.count}>{formattedCount} PRODUCTS</span>
         </div>
       </Html>
     </Billboard>

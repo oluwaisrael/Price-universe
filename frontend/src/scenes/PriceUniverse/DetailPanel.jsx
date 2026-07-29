@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import styles from './DetailPanel.module.css'
 
 function formatPrice(price) {
@@ -23,11 +24,19 @@ function formatScrapedAt(iso) {
 }
 
 function DetailPanel({ node, onClose }) {
+  const navigate = useNavigate()
+
   if (!node) return null
+
+  function goToFullDetail() {
+    if (!node.url) return
+    navigate(`/product/${encodeURIComponent(node.url)}`)
+  }
 
   return (
     <aside className={styles.panel}>
-      <button className={styles.closeButton} uvonClick={onClose} aria-label="Close">
+      <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close">
+        ×
       </button>
 
       {node.image && (
@@ -57,29 +66,21 @@ function DetailPanel({ node, onClose }) {
         </div>
       </div>
 
-      {node.url && (
-        <a
-          href={node.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.viewButton}
-          style={{ backgroundColor: node.color }}
-        >
-          View on {node.site}
-        </a>
-      )}
-
-      <div className={styles.skeletonBlock}>
-        <span className={styles.skeletonLabel}>Price History</span>
-        <div className={styles.skeletonChart}>
-          <div className={styles.skeletonLine} />
-        </div>
-      </div>
-
-      <div className={styles.skeletonStatsRow}>
-        <div className={styles.skeletonStat} />
-        <div className={styles.skeletonStat} />
-        <div className={styles.skeletonStat} />
+      <div className={styles.actions}>
+        {node.url && (
+          <a
+            href={node.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.viewButton}
+            style={{ backgroundColor: node.color }}
+          >
+            View on {node.site}
+          </a>
+        )}
+        <button type="button" className={styles.detailButton} onClick={goToFullDetail}>
+          Full details
+        </button>
       </div>
     </aside>
   )
