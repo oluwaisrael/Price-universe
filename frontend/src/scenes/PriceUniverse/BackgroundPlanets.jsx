@@ -276,15 +276,15 @@ function BackgroundPlanets() {
 
   const moons = useMemo(() => [
     // Large framing moons — edges only, softer glow
-    { id: 'L1', position: [-195,  18, -210], scale: 22.0, seed: 1.12, rotSpeed: 0.007, glowColor: '#10162a', glowOpacity: 0.08, dustColor: '#060a14', dustOpacity: 0.06, fogColor: FOG },
-    { id: 'R1', position: [248,  58, -185], scale: 17.0, seed: 7.88, rotSpeed: 0.010, glowColor: '#0a1822', glowOpacity: 0.08, dustColor: '#050e14', dustOpacity: 0.08, fogColor: FOG },
-    { id: 'R2', position: [228, -105, -170], scale: 12.0, seed: 3.41, rotSpeed: 0.015, glowColor: '#160c08', glowOpacity: 0.07, dustColor: '#0c0604', dustOpacity: 0.07, fogColor: FOG },
+    { id: 'L1', position: [-195,  18, -210], scale: 22.0, seed: 1.12, rotSpeed: 0.007, glowColor: '#10162a', glowOpacity: 0.03, dustColor: '#060a14', dustOpacity: 0.06, fogColor: FOG },
+    { id: 'R1', position: [248,  58, -185], scale: 17.0, seed: 7.88, rotSpeed: 0.010, glowColor: '#0a1822', glowOpacity: 0.03, dustColor: '#050e14', dustOpacity: 0.08, fogColor: FOG },
+    { id: 'R2', position: [228, -105, -170], scale: 12.0, seed: 3.41, rotSpeed: 0.015, glowColor: '#160c08', glowOpacity: 0.025, dustColor: '#0c0604', dustOpacity: 0.07, fogColor: FOG },
     // Mid-depth accents
-    { id: 'M1', position: [-155, -70, -220], scale: 10.5, seed: 5.67, rotSpeed: 0.018, glowColor: '#0e1428', glowOpacity: 0.07, dustColor: '#060a16', dustOpacity: 0.06, fogColor: FOG },
-    { id: 'M2', position: [155,  95, -205], scale: 9.0,  seed: 9.23, rotSpeed: 0.020, glowColor: '#0a1822', glowOpacity: 0.07, dustColor: '#061018', dustOpacity: 0.08, fogColor: FOG },
+    { id: 'M1', position: [-155, -70, -220], scale: 10.5, seed: 5.67, rotSpeed: 0.018, glowColor: '#0e1428', glowOpacity: 0.025, dustColor: '#060a16', dustOpacity: 0.06, fogColor: FOG },
+    { id: 'M2', position: [155,  95, -205], scale: 9.0,  seed: 9.23, rotSpeed: 0.020, glowColor: '#0a1822', glowOpacity: 0.025, dustColor: '#061018', dustOpacity: 0.08, fogColor: FOG },
     // Deep background anchors
-    { id: 'T1', position: [55,  130, -310], scale: 11.0, seed: 3.33, rotSpeed: 0.006, glowColor: '#080e18', glowOpacity: 0.04, dustColor: '#040810', dustOpacity: 0.04, fogColor: FOG },
-    { id: 'T2', position: [-130, -35, -320], scale: 13.0, seed: 7.14, rotSpeed: 0.005, glowColor: '#0a0e16', glowOpacity: 0.04, dustColor: '#05070c', dustOpacity: 0.04, fogColor: FOG },
+    { id: 'T1', position: [55,  130, -310], scale: 11.0, seed: 3.33, rotSpeed: 0.006, glowColor: '#080e18', glowOpacity: 0.015, dustColor: '#040810', dustOpacity: 0.04, fogColor: FOG },
+    { id: 'T2', position: [-130, -35, -320], scale: 13.0, seed: 7.14, rotSpeed: 0.005, glowColor: '#0a0e16', glowOpacity: 0.015, dustColor: '#05070c', dustOpacity: 0.04, fogColor: FOG },
   ], [])
 
   return (

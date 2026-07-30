@@ -92,7 +92,7 @@ void main() {
   float dist = length(uv * vec2(uRes.x / uRes.y, 1.0));
 
   // Deeper pure black — less navy wash so galaxies and hero text pop
-  vec3 col = mix(vec3(0.006, 0.005, 0.012), vec3(0.0), smoothstep(0.0, 0.65, dist));
+  vec3 col = mix(vec3(0.008, 0.006, 0.018), vec3(0.0, 0.0, 0.002), smoothstep(0.0, 0.7, dist));
 
   // Minimal warm core hint
   col += vec3(0.004, 0.002, 0.001) * (1.0 - smoothstep(0.0, 0.25, dist));
@@ -268,27 +268,27 @@ void main() {
   // Orange anchor (Jumia galaxy side — left-ish)
   vec2  cOrange  = vec2(0.18, 0.52);
   float rOrange  = 0.55;
-  vec3  colOrange = vec3(0.09, 0.03, 0.00);
+  vec3  colOrange = vec3(0.04, 0.015, 0.00);
 
   // Amber transition
   vec2  cAmber   = vec2(0.35, 0.55);
   float rAmber   = 0.42;
-  vec3  colAmber  = vec3(0.06, 0.02, 0.01);
+  vec3  colAmber  = vec3(0.03, 0.012, 0.005);
 
   // Purple bridge — centre
   vec2  cPurple  = vec2(0.50, 0.48);
   float rPurple  = 0.50;
-  vec3  colPurple = vec3(0.07, 0.02, 0.10);
+  vec3  colPurple = vec3(0.04, 0.012, 0.07);
 
   // Deep blue transition
   vec2  cBlue    = vec2(0.65, 0.52);
   float rBlue    = 0.42;
-  vec3  colBlue   = vec3(0.00, 0.02, 0.08);
+  vec3  colBlue   = vec3(0.00, 0.015, 0.05);
 
   // Cyan anchor (Jiji galaxy side — right-ish)
   vec2  cCyan    = vec2(0.82, 0.50);
   float rCyan    = 0.55;
-  vec3  colCyan   = vec3(0.00, 0.04, 0.09);
+  vec3  colCyan   = vec3(0.00, 0.02, 0.05);
 
   // Correct aspect ratio for distances
   vec2 uvA = vec2(uv.x * aspect, uv.y);
@@ -388,41 +388,29 @@ void main() {
 // Colors are deliberately undersaturated so galaxies pop.
 
 const NEBULA_CONFIGS = [
-  // Purple / violet — left-center depth (behind Jumia, soft)
+  // Soft purple — left depth (behind text / Jumia), very faint
   {
-    offset: [-0.32, 0.18], scale: 1.5, warp: 1.9, maskRadius: 0.42,
-    colorA: [0.05, 0.01, 0.10], colorB: [0.09, 0.02, 0.16],
-    opacity: 0.28, z: -110, size: 140,
+    offset: [-0.28, 0.22], scale: 2.0, warp: 2.2, maskRadius: 0.48,
+    colorA: [0.04, 0.01, 0.08], colorB: [0.07, 0.02, 0.12],
+    opacity: 0.18, z: -140, size: 180,
   },
-  // Magenta-purple cloud — upper mid
+  // Soft blue — right depth (behind Jiji)
   {
-    offset: [-0.08, 0.32], scale: 1.7, warp: 2.1, maskRadius: 0.36,
-    colorA: [0.06, 0.01, 0.09], colorB: [0.10, 0.02, 0.12],
-    opacity: 0.20, z: -140, size: 120,
+    offset: [0.34, 0.18], scale: 2.1, warp: 2.3, maskRadius: 0.46,
+    colorA: [0.00, 0.03, 0.07], colorB: [0.01, 0.06, 0.12],
+    opacity: 0.16, z: -150, size: 170,
   },
-  // Teal / blue gas — right side behind Jiji
+  // Center violet bridge — barely there
   {
-    offset: [0.34, 0.12], scale: 1.6, warp: 2.0, maskRadius: 0.40,
-    colorA: [0.00, 0.04, 0.08], colorB: [0.01, 0.08, 0.14],
-    opacity: 0.26, z: -120, size: 130,
+    offset: [0.08, 0.10], scale: 2.4, warp: 2.6, maskRadius: 0.55,
+    colorA: [0.03, 0.01, 0.06], colorB: [0.05, 0.01, 0.09],
+    opacity: 0.10, z: -190, size: 200,
   },
-  // Deep cyan wash — far right
+  // Top-left faint warm dust
   {
-    offset: [0.42, 0.28], scale: 1.9, warp: 2.3, maskRadius: 0.34,
-    colorA: [0.00, 0.03, 0.07], colorB: [0.00, 0.06, 0.12],
-    opacity: 0.18, z: -160, size: 110,
-  },
-  // Warm amber dust — far left edge (not competing with text)
-  {
-    offset: [-0.45, -0.05], scale: 1.8, warp: 2.0, maskRadius: 0.30,
-    colorA: [0.06, 0.02, 0.01], colorB: [0.10, 0.04, 0.01],
-    opacity: 0.14, z: -150, size: 100,
-  },
-  // Central purple bridge — very soft depth between galaxies
-  {
-    offset: [0.08, 0.05], scale: 2.0, warp: 2.4, maskRadius: 0.48,
-    colorA: [0.03, 0.01, 0.07], colorB: [0.05, 0.01, 0.11],
-    opacity: 0.12, z: -175, size: 160,
+    offset: [-0.40, 0.30], scale: 1.8, warp: 2.0, maskRadius: 0.35,
+    colorA: [0.05, 0.02, 0.01], colorB: [0.08, 0.03, 0.01],
+    opacity: 0.08, z: -160, size: 140,
   },
 ]
 
@@ -430,19 +418,14 @@ const NEBULA_CONFIGS = [
 
 const DUST_CONFIGS = [
   {
-    offset: [-0.25, 0.15], scale: 2.2, warp: 3.0, maskRadius: 0.36,
-    colorA: [0.04, 0.01, 0.07], colorB: [0.07, 0.02, 0.10],
-    opacity: 0.14, z: -90, size: 110,
+    offset: [-0.20, 0.12], scale: 2.4, warp: 3.0, maskRadius: 0.42,
+    colorA: [0.03, 0.01, 0.05], colorB: [0.05, 0.02, 0.08],
+    opacity: 0.10, z: -110, size: 130,
   },
   {
-    offset: [0.28, 0.08], scale: 2.0, warp: 2.8, maskRadius: 0.34,
-    colorA: [0.00, 0.03, 0.06], colorB: [0.01, 0.05, 0.10],
-    opacity: 0.12, z: -105, size: 100,
-  },
-  {
-    offset: [0.05, -0.15], scale: 2.4, warp: 3.2, maskRadius: 0.40,
-    colorA: [0.02, 0.01, 0.05], colorB: [0.04, 0.01, 0.08],
-    opacity: 0.10, z: -130, size: 120,
+    offset: [0.28, 0.08], scale: 2.3, warp: 2.9, maskRadius: 0.40,
+    colorA: [0.00, 0.02, 0.05], colorB: [0.01, 0.04, 0.08],
+    opacity: 0.09, z: -125, size: 120,
   },
 ]
 
@@ -563,11 +546,11 @@ export default function DeepSpaceBackground3D() {
 
   // ── Star field geometries ─────────────────────────────────────────────────
   const starGeoFar  = useMemo(() =>
-    makeStarGeometry(75000, [45, 95],   [0.35, 1.1],  FAR_PALETTE,  [-320, -170]), [])
+    makeStarGeometry(80000, [50, 120],  [0.25, 0.95], FAR_PALETTE,  [-360, -160]), [])
   const starGeoMid  = useMemo(() =>
-    makeStarGeometry(24000, [22, 55],   [0.7, 1.7],  MID_PALETTE,  [-190, -95]), [])
+    makeStarGeometry(22000, [25, 60],   [0.55, 1.4], MID_PALETTE,  [-200, -90]), [])
   const starGeoNear = useMemo(() =>
-    makeStarGeometry(4000,  [12, 35],   [1.1, 2.5],  NEAR_PALETTE, [-110, -55]),  [])
+    makeStarGeometry(2800,  [12, 32],   [1.0, 2.2],  NEAR_PALETTE, [-110, -50]),  [])
 
   // ── Star materials ────────────────────────────────────────────────────────
   const makeStarMat = (opacity = 1.0) => new THREE.ShaderMaterial({
