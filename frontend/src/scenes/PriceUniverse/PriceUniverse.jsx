@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Canvas } from '@react-three/fiber'
-import { EffectComposer, Vignette, Noise } from '@react-three/postprocessing'
+import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing'
 import { useProducts } from '../../hooks/useProducts'
 import { normalizeProducts } from './normalizeProducts'
 import { computeGalaxyLayout } from './galaxyLayout'
@@ -40,13 +40,23 @@ function PriceUniverse({ searchValue = '' }) {
     <div className={styles.canvasWrapper}>
       <Canvas
         camera={{ position: [30, 45, 88], fov: 50, far: 2000 }}
+        dpr={[1, 1.75]}
         onPointerMissed={() => setSelectedId(null)}
       >
-        <SpaceScene />
-        {/* Stage 2: no bloom — core must look good without it */}
+        <SpaceScene
+          nodes={nodes}
+          selectedId={selectedId}
+          onSelect={setSelectedId}
+        />
         <EffectComposer>
-          <Noise opacity={0.035} />
-          <Vignette eskil={false} offset={0.14} darkness={0.5} />
+          <Bloom
+            intensity={0.45}
+            luminanceThreshold={0.55}
+            luminanceSmoothing={0.35}
+            mipmapBlur
+          />
+          <Noise opacity={0.03} />
+          <Vignette eskil={false} offset={0.12} darkness={0.48} />
         </EffectComposer>
       </Canvas>
 

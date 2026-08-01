@@ -21,8 +21,8 @@
 
 // ─── Scene placement (hero text clears left column) ──────────────────────────
 const GALAXY_CENTERS = {
-  Jumia: { x: 36, z: -6 },
-  Jiji:  { x: 102, z: -22 },
+  Jumia: { x: 40, z: -8 },
+  Jiji:  { x: 95, z: -26 },
 }
 const DEFAULT_GALAXY_CENTER = { x: 0, z: 0 }
 
