@@ -39,7 +39,7 @@ function PriceUniverse({ searchValue = '' }) {
   return (
     <div className={styles.canvasWrapper}>
       <Canvas
-        camera={{ position: [30, 45, 88], fov: 50, far: 2000 }}
+        camera={{ position: [28, 32, 95], fov: 48, far: 2000 }}
         dpr={[1, 1.75]}
         onPointerMissed={() => setSelectedId(null)}
       >
@@ -50,9 +50,9 @@ function PriceUniverse({ searchValue = '' }) {
         />
         <EffectComposer>
           <Bloom
-            intensity={0.45}
-            luminanceThreshold={0.55}
-            luminanceSmoothing={0.35}
+            intensity={0.65}
+            luminanceThreshold={0.4}
+            luminanceSmoothing={0.3}
             mipmapBlur
           />
           <Noise opacity={0.03} />

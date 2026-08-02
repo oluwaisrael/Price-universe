@@ -14,8 +14,8 @@ import ProductNode from '../ProductNode'
 import { getGalaxyCenters, getGalaxyRadius } from '../galaxyLayout'
 import { SPACE } from '../utils/colors'
 
-const JUMIA = { x: 36, y: 0, z: -6 }
-const JIJI = { x: 92, y: -4, z: -28 }
+const JUMIA = { x: 52, y: 0, z: -2 }
+const JIJI = { x: 102, y: -2, z: -22 }
 
 /**
  * Full concept scene:
@@ -41,8 +41,8 @@ export default function SpaceScene({
 
   return (
     <>
-      <color attach="background" args={[SPACE.void]} />
-      <fog attach="fog" args={['#03030a', 120, 380]} />
+      <color attach="background" args={['#000005']} />
+      <fog attach="fog" args={['#000005', 180, 480]} />
 
       <Lighting />
 
@@ -62,7 +62,7 @@ export default function SpaceScene({
         center={jumiaCenter}
         radius={radius}
         theme="orange"
-        spin={0.01}
+        spin={0.028}
       />
       <GalaxyLabel
         center={jumiaCenter}
@@ -77,7 +77,7 @@ export default function SpaceScene({
         center={jijiCenter}
         radius={radius * 0.72}
         theme="cyan"
-        spin={0.014}
+        spin={0.035}
       />
       <GalaxyLabel
         center={jijiCenter}

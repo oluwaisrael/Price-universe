@@ -21,36 +21,40 @@
 
 // ─── Scene placement (hero text clears left column) ──────────────────────────
 const GALAXY_CENTERS = {
-  Jumia: { x: 40, z: -8 },
-  Jiji:  { x: 95, z: -26 },
+  Jumia: { x: 52, z: -2 },
+  Jiji:  { x: 102, z: -22 },
 }
 const DEFAULT_GALAXY_CENTER = { x: 0, z: 0 }
 
 const MIN_HEIGHT = -2.0
 const MAX_HEIGHT = 3.5
 
-// Silhouette
-const GALAXY_RADIUS = 44
-const CORE_RADIUS = 1.2
-const ARM_COUNT = 2
-const SPIRAL_TURNS = 1.05          // ~1 turn — readable pinwheel, not rings
-const SPIRAL_PITCH = (SPIRAL_TURNS * Math.PI * 2) / Math.log(GALAXY_RADIUS / CORE_RADIUS)
+// Silhouette — compact multi-arm like the mockup
+const GALAXY_RADIUS = 32
+const CORE_RADIUS = 1.0
+const ARM_COUNT = 4
+const SPIRAL_TURNS = 0.95          // clear orbits without over-long arms
+// Negative pitch = opposite wind direction
+const SPIRAL_PITCH = -(SPIRAL_TURNS * Math.PI * 2) / Math.log(GALAXY_RADIUS / CORE_RADIUS)
 
-// Arm thickness (world units) — cloud is the bulk, ridge is the highlight
-const SIGMA_RIDGE = 1.1
-const SIGMA_CLOUD = 7.5
-const SIGMA_FRINGE = 12.0
+// Arm thickness (world units) — scaled to compact radius
+const SIGMA_RIDGE = 0.55
+const SIGMA_CLOUD = 2.8
+const SIGMA_FRINGE = 5.0
+// Products sit tightly on the arm ridge
+const SIGMA_PRODUCT = 0.7
 
 // Particle budget (~20k total for both galaxies)
-const ARM_RIDGE_PER_ARM = 200
-const ARM_CLOUD_PER_ARM = 900
-const INTERARM_PER_GALAXY = 600
+const ARM_RIDGE_PER_ARM = 220
+const ARM_CLOUD_PER_ARM = 1100
+const INTERARM_PER_GALAXY = 450
 const CORE_POINTS_PER_GALAXY = 900
-const HALO_PER_GALAXY = 700
+const HALO_PER_GALAXY = 600
 
-const DISC_TILT_RAD = (38 * Math.PI) / 180
-const VERTICAL_ARM = 1.6
-const VERTICAL_CORE = 1.4
+// Stronger tilt so the disc reads edge-on like the mockup (~48°)
+const DISC_TILT_RAD = (48 * Math.PI) / 180
+const VERTICAL_ARM = 1.35
+const VERTICAL_CORE = 1.15
 
 // ─── Deterministic hash ──────────────────────────────────────────────────────
 function hashToUnit(str) {
@@ -100,7 +104,7 @@ function sampleArmPoint(site, armIndex, t, seed, layer = 'cloud') {
   let sigma = SIGMA_CLOUD
   if (layer === 'ridge') sigma = SIGMA_RIDGE
   else if (layer === 'fringe') sigma = SIGMA_FRINGE
-  else if (layer === 'product') sigma = SIGMA_CLOUD * 0.9
+  else if (layer === 'product') sigma = SIGMA_PRODUCT
 
   // Arms thicken slightly with radius (natural look)
   sigma *= 0.75 + 0.55 * t
@@ -135,12 +139,12 @@ function spiralPosition(id, index, total = 1) {
 
   const armPick = Math.floor(hashToUnit(`${index}-${id}-arm`) * ARM_COUNT) % ARM_COUNT
 
-  // Light clustering: groups of 4 share a small bias along the arm
-  const groupId = Math.floor(index / 4)
-  const groupT = (hashToUnit(`${id}-grp-${groupId}-t`) - 0.5) * 0.06
-  t = Math.min(0.98, Math.max(0.12, t + groupT))
+  // Light clustering: groups of 3 share a small bias along the arm
+  const groupId = Math.floor(index / 3)
+  const groupT = (hashToUnit(`${id}-grp-${groupId}-t`) - 0.5) * 0.04
+  t = Math.min(0.96, Math.max(0.15, t + groupT))
 
-  const local = sampleArmPoint('prod', armPick, t, `${index}-${id}`, 'fringe')
+  const local = sampleArmPoint('prod', armPick, t, `${index}-${id}`, 'product')
   return local
 }
 

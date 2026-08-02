@@ -75,8 +75,8 @@ export default function NebulaLayer({ galaxyPos = [48, 0, -12] }) {
             // Streak / river structures
             float rivers = smoothstep(0.5, 0.8, nStreak) * 0.5;
 
-            float density = clamp(clouds * 0.55 + rivers * 0.35, 0.0, 1.0);
-            density = pow(density, 1.3); // keep most of sky darker
+            float density = clamp(clouds * 0.68 + rivers * 0.42, 0.0, 1.0);
+            density = pow(density, 1.15); // richer structure, still mostly dark
 
             // Color regions
             float side = d.x * 0.5 + 0.5;
@@ -96,13 +96,13 @@ export default function NebulaLayer({ galaxyPos = [48, 0, -12] }) {
             float warm = pow(max(0.0, dot(d, toGal)), 4.0);
             col = mix(col, vec3(0.2, 0.08, 0.02), warm * 0.35 * density);
 
-            // Deep void base
-            vec3 voidCol = vec3(0.006, 0.005, 0.012);
-            float amp = density * 0.55;
+            // Near-black void (match mockup)
+            vec3 voidCol = vec3(0.0, 0.0, 0.002);
+            float amp = density * 0.32;
             vec3 finalCol = mix(voidCol, col, amp);
 
-            // Soft atmospheric gradient (very faint)
-            finalCol += vec3(0.01, 0.012, 0.025) * (0.15 + 0.1 * up);
+            // Soft atmospheric gradient (barely there)
+            finalCol += vec3(0.003, 0.003, 0.008) * (0.08 + 0.05 * up);
 
             gl_FragColor = vec4(finalCol, 1.0);
           }
