@@ -1,27 +1,37 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
+import ProductNode from '../ProductNode'
 
 /**
- * Galaxy — continuous spiral arm ribbons (mockup-style).
- * Mesh ribbons guarantee visible arms at any distance; particles add texture.
+ * Galaxy — next-level cinematic particle spiral.
+ * Dense volumetric arms, multi-layer core, dark inter-arm voids,
+ * face-on mild tilt so the disc + core read clearly.
  */
 
 function makePalette(theme = 'orange') {
   if (theme === 'cyan') {
     return {
-      core: '#E8FFFF',
-      mid: '#6AE8F8',
-      arm: '#22D0E8',
-      deep: '#0AA0C0',
+      nucleus: new THREE.Color('#F0FFFF'),
+      bulge: new THREE.Color('#B8F0FF'),
+      gold: new THREE.Color('#7AE8FF'),
+      amber: new THREE.Color('#3DD8F0'),
+      arm: new THREE.Color('#1AC8E0'),
+      deep: new THREE.Color('#0A90B0'),
+      ember: new THREE.Color('#087090'),
+      hot: new THREE.Color('#FFFFFF'),
       light: '#b0faff',
     }
   }
   return {
-    core: '#FFF8E0',
-    mid: '#FFB848',
-    arm: '#FF9220',
-    deep: '#E87010',
+    nucleus: new THREE.Color('#FFF8E8'),
+    bulge: new THREE.Color('#FFE9A0'),
+    gold: new THREE.Color('#FFD060'),
+    amber: new THREE.Color('#FFB038'),
+    arm: new THREE.Color('#FF8C1A'),
+    deep: new THREE.Color('#E86800'),
+    ember: new THREE.Color('#C05010'),
+    hot: new THREE.Color('#FFFFFF'),
     light: '#ffe8a8',
   }
 }
@@ -46,8 +56,8 @@ function makeSoftTex() {
   const ctx = c.getContext('2d')
   const g = ctx.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2)
   g.addColorStop(0, 'rgba(255,255,255,1)')
-  g.addColorStop(0.25, 'rgba(255,255,255,0.55)')
-  g.addColorStop(0.55, 'rgba(255,255,255,0.12)')
+  g.addColorStop(0.2, 'rgba(255,255,255,0.55)')
+  g.addColorStop(0.5, 'rgba(255,255,255,0.1)')
   g.addColorStop(1, 'rgba(255,255,255,0)')
   ctx.fillStyle = g
   ctx.fillRect(0, 0, s, s)
@@ -56,138 +66,133 @@ function makeSoftTex() {
   return t
 }
 
-/** Soft strip texture for arm ribbons (bright center, fade edges) */
-function makeRibbonTex() {
-  const w = 128
-  const h = 32
-  const c = document.createElement('canvas')
-  c.width = w
-  c.height = h
-  const ctx = c.getContext('2d')
-  const g = ctx.createLinearGradient(0, 0, 0, h)
-  g.addColorStop(0, 'rgba(255,255,255,0)')
-  g.addColorStop(0.35, 'rgba(255,255,255,0.55)')
-  g.addColorStop(0.5, 'rgba(255,255,255,1)')
-  g.addColorStop(0.65, 'rgba(255,255,255,0.55)')
-  g.addColorStop(1, 'rgba(255,255,255,0)')
-  ctx.fillStyle = g
-  ctx.fillRect(0, 0, w, h)
-  // mild length falloff
-  const gx = ctx.createLinearGradient(0, 0, w, 0)
-  gx.addColorStop(0, 'rgba(0,0,0,0.15)')
-  gx.addColorStop(0.15, 'rgba(0,0,0,0)')
-  gx.addColorStop(0.85, 'rgba(0,0,0,0)')
-  gx.addColorStop(1, 'rgba(0,0,0,0.35)')
-  ctx.fillStyle = gx
-  ctx.fillRect(0, 0, w, h)
-  const t = new THREE.CanvasTexture(c)
-  t.needsUpdate = true
-  return t
-}
-
 const ARM_COUNT = 4
-const SPIRAL_TURNS = 0.95
+const SPIRAL_TURNS = 1.08
 
-/**
- * Build a ribbon mesh along a logarithmic spiral arm.
- * Returns BufferGeometry for a continuous strip.
- */
-function buildArmRibbon(radius, armIndex, widthScale = 1) {
-  const segments = 96
-  const r0 = radius * 0.08
-  const rMax = radius * 1.0
-  const kLog = -(SPIRAL_TURNS * Math.PI * 2) / Math.log(rMax / r0)
-  const phase = (armIndex / ARM_COUNT) * Math.PI * 2
-
-  const positions = []
-  const uvs = []
-  const indices = []
-
-  for (let i = 0; i <= segments; i++) {
-    const t = i / segments
-    // ease outward
-    const te = Math.pow(t, 0.85)
-    const r = r0 + te * (rMax - r0)
-    const theta = phase + kLog * Math.log(Math.max(r, r0 * 1.01) / r0)
-
-    // arm width grows then fades at rim
-    const width = radius * (0.045 + 0.07 * te) * (1 - te * 0.35) * widthScale
-    const px = -Math.sin(theta)
-    const pz = Math.cos(theta)
-
-    const cx = Math.cos(theta) * r
-    const cz = Math.sin(theta) * r
-
-    // two edges of the ribbon
-    positions.push(cx + px * width, 0.02, cz + pz * width)
-    positions.push(cx - px * width, -0.02, cz - pz * width)
-    uvs.push(t, 1, t, 0)
-  }
-
-  for (let i = 0; i < segments; i++) {
-    const a = i * 2
-    indices.push(a, a + 1, a + 2, a + 1, a + 3, a + 2)
-  }
-
-  const geo = new THREE.BufferGeometry()
-  geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3))
-  geo.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2))
-  geo.setIndex(indices)
-  geo.computeVertexNormals()
-  return geo
-}
-
-/** Dense particles along arms for dust texture */
-function buildArmDust(radius, palette) {
+function buildGalaxy(radius, COL) {
   const positions = []
   const colors = []
-  const colArm = new THREE.Color(palette.arm)
-  const colMid = new THREE.Color(palette.mid)
-  const colDeep = new THREE.Color(palette.deep)
-  const colCore = new THREE.Color(palette.core)
 
-  const r0 = radius * 0.08
-  const rMax = radius * 1.02
+  const push = (x, y, z, col, b) => {
+    const bb = Math.min(1, Math.max(0, b))
+    positions.push(x, y, z)
+    colors.push(col.r * bb, col.g * bb, col.b * bb)
+  }
+
+  const r0 = radius * 0.07
+  const rMax = radius * 1.05
   const kLog = -(SPIRAL_TURNS * Math.PI * 2) / Math.log(rMax / r0)
 
-  for (let arm = 0; arm < ARM_COUNT; arm++) {
-    const phase = (arm / ARM_COUNT) * Math.PI * 2
-    const samples = 2200
-    for (let i = 0; i < samples; i++) {
-      const t = Math.pow(i / (samples - 1), 0.8)
-      if (t < 0.04) continue
-      if (Math.sin(t * Math.PI * 6 + arm) > 0.93 && hash(i + arm * 300, 2) < 0.4) continue
-
-      const r = r0 + t * (rMax - r0)
-      const theta = phase + kLog * Math.log(r / r0)
-      const sigma = radius * (0.025 + 0.05 * t)
-      const side = gauss(i + arm * 800, 3) * sigma
-      const y = gauss(i + arm * 800, 4) * sigma * 0.5
-      const x = Math.cos(theta) * r + Math.cos(theta + Math.PI / 2) * side
-      const z = Math.sin(theta) * r + Math.sin(theta + Math.PI / 2) * side
-
-      let c
-      if (t < 0.18) c = colCore
-      else if (t < 0.45) c = colMid
-      else if (t < 0.72) c = colArm
-      else c = colDeep
-
-      const bright = (0.7 + hash(i, 5) * 0.4) * Math.pow(1 - t * 0.28, 0.6)
-      positions.push(x, y, z)
-      colors.push(c.r * bright, c.g * bright, c.b * bright)
+  // ── CORE layers (nested, soft falloff) ──────────────────────
+  const coreLayers = [
+    { n: 2800, sc: 0.04, flat: 0.4, col: COL.nucleus, b: 0.95 },
+    { n: 4000, sc: 0.07, flat: 0.42, col: COL.bulge, b: 0.8 },
+    { n: 5000, sc: 0.11, flat: 0.45, col: COL.gold, b: 0.6 },
+    { n: 4000, sc: 0.16, flat: 0.48, col: COL.amber, b: 0.4 },
+  ]
+  for (const L of coreLayers) {
+    for (let i = 0; i < L.n; i++) {
+      const gx = gauss(i + L.n, 1) * radius * L.sc
+      const gy = gauss(i + L.n, 2) * radius * L.sc * L.flat
+      const gz = gauss(i + L.n, 3) * radius * L.sc
+      const dist = Math.sqrt(gx * gx + gz * gz) / (radius * L.sc)
+      if (dist > 2.4) continue
+      push(gx, gy, gz, L.col, L.b * Math.max(0.15, 1 - dist * 0.35) * (0.7 + hash(i, 4) * 0.3))
     }
   }
 
-  // Core cluster
-  for (let i = 0; i < 2000; i++) {
-    const gx = gauss(i, 30) * radius * 0.11
-    const gy = gauss(i, 31) * radius * 0.04
-    const gz = gauss(i, 32) * radius * 0.11
-    const dist = Math.sqrt(gx * gx + gz * gz) / (radius * 0.11)
-    if (dist > 2.0) continue
-    const b = (0.9 - dist * 0.35) * (0.55 + hash(i, 33) * 0.45)
-    positions.push(gx, gy, gz)
-    colors.push(colCore.r * b, colCore.g * b, colCore.b * b)
+  // ── Central bar (real spiral galaxies have one) ─────────────
+  const barAngle = 0.35
+  const barLen = radius * 0.22
+  for (let i = 0; i < 3500; i++) {
+    const u = (hash(i, 10) - 0.5) * 2
+    const along = u * barLen
+    const side = gauss(i, 11) * radius * 0.028
+    const x = Math.cos(barAngle) * along - Math.sin(barAngle) * side
+    const z = Math.sin(barAngle) * along + Math.cos(barAngle) * side
+    const y = gauss(i, 12) * radius * 0.025
+    const t = Math.abs(u)
+    const col = t < 0.3 ? COL.gold : t < 0.6 ? COL.amber : COL.arm
+    push(x, y, z, col, (0.55 - t * 0.25) * (0.75 + hash(i, 13) * 0.25))
+  }
+
+  // ── Spiral arms — dense volumetric dust rivers ──────────────
+  for (let arm = 0; arm < ARM_COUNT; arm++) {
+    const phase = (arm / ARM_COUNT) * Math.PI * 2 + (hash(arm, 20) - 0.5) * 0.1
+    const samples = 5500
+
+    for (let i = 0; i < samples; i++) {
+      const t = Math.pow(i / (samples - 1), 0.75)
+      if (t < 0.04) continue
+
+      // Soft gaps for organic structure
+      if (Math.sin(t * Math.PI * 6.5 + arm * 1.8) > 0.93 && hash(i + arm * 500, 21) < 0.45) continue
+      // Density wave — denser mid-arm
+      const densityWave = 0.5 + 0.5 * Math.pow(0.5 + 0.5 * Math.sin(t * Math.PI * 11 + arm), 1.3)
+      if (hash(i, 22) > 0.35 + densityWave * 0.65) continue
+
+      const r = r0 + t * (rMax - r0)
+      const theta = phase + kLog * Math.log(r / r0)
+
+      // Width grows outward, stays tight to ridge for clear lanes
+      const sigma = radius * (0.028 + 0.055 * t)
+      const ridge = gauss(i + arm * 1000, 23)
+      if (Math.abs(ridge) > 1.6 && hash(i, 24) < 0.75) continue
+      const turb = Math.sin(t * 30 + arm * 5) * 0.12
+      const side = ridge * sigma * 0.45 + turb * sigma * 0.25
+      const y = gauss(i + arm * 1000, 25) * sigma * 0.3
+
+      const x = Math.cos(theta) * r + Math.cos(theta + Math.PI / 2) * side
+      const z = Math.sin(theta) * r + Math.sin(theta + Math.PI / 2) * side
+
+      // Color by radius
+      let col
+      if (t < 0.12) col = hash(i, 26) < 0.5 ? COL.gold : COL.amber
+      else if (t < 0.35) col = hash(i, 26) < 0.5 ? COL.amber : COL.arm
+      else if (t < 0.65) col = hash(i, 26) < 0.55 ? COL.arm : COL.deep
+      else col = hash(i, 26) < 0.5 ? COL.deep : COL.ember
+
+      const ridgeBoost = 1 - Math.min(1, Math.abs(ridge) * 0.25)
+      const bright =
+        (0.45 + hash(i, 27) * 0.4) *
+        ridgeBoost *
+        Math.pow(1 - t * 0.4, 0.7) *
+        (0.85 + densityWave * 0.15)
+
+      // Rare hot stars
+      if (hash(i, 28) > 0.97) {
+        push(x, y, z, COL.hot, bright * 1.2)
+      } else {
+        push(x, y, z, col, bright)
+      }
+    }
+
+    // Stellar associations (bright clumps off the main ridge)
+    for (let j = 0; j < 6; j++) {
+      const t0 = 0.18 + hash(arm * 10 + j, 30) * 0.55
+      const r = r0 + t0 * (rMax - r0)
+      const theta0 = phase + kLog * Math.log(r / r0) + (hash(j, 31) - 0.5) * 0.35
+      const cx = Math.cos(theta0) * r
+      const cz = Math.sin(theta0) * r
+      for (let p = 0; p < 60; p++) {
+        const idx = arm * 100 + j * 60 + p
+        const x = cx + gauss(idx, 32) * radius * 0.02
+        const z = cz + gauss(idx, 33) * radius * 0.02
+        const y = gauss(idx, 34) * radius * 0.015
+        push(x, y, z, t0 < 0.35 ? COL.gold : COL.amber, 0.4 + hash(idx, 35) * 0.3)
+      }
+    }
+  }
+
+  // Sparse outer halo
+  for (let i = 0; i < 1200; i++) {
+    const rn = 0.9 + hash(i, 40) * 0.4
+    const theta = hash(i, 41) * Math.PI * 2
+    const r = rn * radius
+    const x = Math.cos(theta) * r
+    const z = Math.sin(theta) * r
+    const y = gauss(i, 42) * radius * 0.04
+    push(x, y, z, COL.ember, 0.03 + hash(i, 43) * 0.04)
   }
 
   return {
@@ -223,109 +228,89 @@ function PointsLayer({ data, size, opacity, map }) {
 
 export default function Galaxy({
   center = { x: 42, y: 2, z: -8 },
-  radius = 32,
+  radius = 40,
   theme = 'orange',
   spin = 0.028,
+  products = [],
+  selectedId = null,
+  onSelect = () => {},
 }) {
   const group = useRef()
   const soft = useMemo(() => makeSoftTex(), [])
-  const ribbonTex = useMemo(() => makeRibbonTex(), [])
-  const palette = useMemo(() => makePalette(theme), [theme])
-  const dust = useMemo(() => buildArmDust(radius, palette), [radius, palette])
-
-  const ribbons = useMemo(() => {
-    const list = []
-    for (let a = 0; a < ARM_COUNT; a++) {
-      list.push({
-        key: `arm-${a}`,
-        geo: buildArmRibbon(radius, a, 1),
-        color: palette.arm,
-        opacity: 0.55,
-      })
-      // slightly offset secondary ribbon for thickness
-      list.push({
-        key: `arm-s-${a}`,
-        geo: buildArmRibbon(radius, a, 0.55),
-        color: palette.mid,
-        opacity: 0.35,
-      })
-    }
-    return list
-  }, [radius, palette])
+  const COL = useMemo(() => makePalette(theme), [theme])
+  const data = useMemo(() => buildGalaxy(radius, COL), [radius, COL])
 
   useFrame((_, dt) => {
     if (group.current) group.current.rotation.y += dt * spin
   })
 
-  const coreCol = palette.light
-  const coreR = radius * 0.15
-  const midR = radius * 0.3
-  const outerR = radius * 0.52
+  const coreCol = COL.light
+  const coreR = radius * 0.13
+  const midR = radius * 0.26
+  const outerR = radius * 0.48
 
   return (
     <group
       ref={group}
       position={[center.x, center.y ?? 0, center.z]}
-      rotation={[-0.84, 0.12, 0.32]}
+      rotation={[-0.55, 0.12, 0.1]}
     >
-      {/* Continuous spiral arm ribbons — always visible */}
-      {ribbons.map((r) => (
-        <mesh key={r.key} geometry={r.geo} renderOrder={-8}>
-          <meshBasicMaterial
-            map={ribbonTex}
-            color={r.color}
-            transparent
-            opacity={r.opacity}
-            depthWrite={false}
-            blending={THREE.AdditiveBlending}
-            toneMapped={false}
-            side={THREE.DoubleSide}
-          />
-        </mesh>
-      ))}
+      {/* Dense particle body */}
+      <PointsLayer data={data} size={0.7} opacity={0.95} map={soft} />
+      {/* Soft bloom layer */}
+      <PointsLayer data={data} size={1.45} opacity={0.28} map={soft} />
 
-      {/* Dust texture on arms */}
-      <PointsLayer data={dust} size={0.7} opacity={0.85} map={soft} />
-      <PointsLayer data={dust} size={1.4} opacity={0.25} map={soft} />
-
-      {/* Hot core */}
-      <mesh rotation={[-0.15, 0, 0]} renderOrder={-4}>
+      {/* Multi-layer core glow */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} renderOrder={-4}>
         <planeGeometry args={[outerR * 2, outerR * 2]} />
         <meshBasicMaterial
           map={soft}
           color={coreCol}
           transparent
-          opacity={0.3}
+          opacity={0.2}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
         />
       </mesh>
-      <mesh rotation={[-0.15, 0, 0]} renderOrder={-3}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.04, 0]} renderOrder={-3}>
         <planeGeometry args={[midR * 2, midR * 2]} />
         <meshBasicMaterial
           map={soft}
           color={coreCol}
           transparent
-          opacity={0.55}
+          opacity={0.48}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
         />
       </mesh>
-      <mesh rotation={[-0.15, 0, 0]} renderOrder={-2}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]} renderOrder={-2}>
         <planeGeometry args={[coreR * 2, coreR * 2]} />
         <meshBasicMaterial
           map={soft}
           color="#ffffff"
           transparent
-          opacity={1}
+          opacity={0.95}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
         />
       </mesh>
       <pointLight color={coreCol} intensity={2.2} distance={radius * 2} decay={2} />
+
+      {/* Products embedded on arms — children of rotating group = planets on orbits */}
+      {products.map((node) => (
+        <ProductNode
+          key={node.id}
+          node={{
+            ...node,
+            position: node.localPosition ?? node.position,
+          }}
+          isSelected={node.id === selectedId}
+          onSelect={onSelect}
+        />
+      ))}
     </group>
   )
 }

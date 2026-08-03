@@ -10,12 +10,11 @@ import Lighting from './Lighting'
 import CameraRig from '../CameraRig'
 import Galaxy from '../galaxy/Galaxy'
 import GalaxyLabel from '../GalaxyLabel'
-import ProductNode from '../ProductNode'
 import { getGalaxyCenters, getGalaxyRadius } from '../galaxyLayout'
 import { SPACE } from '../utils/colors'
 
-const JUMIA = { x: 52, y: 0, z: -2 }
-const JIJI = { x: 102, y: -2, z: -22 }
+const JUMIA = { x: 102, y: -20, z: -30 }
+const JIJI = { x: 62, y: 2, z: -2 }
 
 /**
  * Full concept scene:
@@ -30,10 +29,10 @@ export default function SpaceScene({
   const radius = getGalaxyRadius()
 
   const jumiaCenter = centers.Jumia
-    ? { x: centers.Jumia.x, y: 0, z: centers.Jumia.z }
+    ? { x: centers.Jumia.x, y: -20, z: centers.Jumia.z }
     : JUMIA
   const jijiCenter = centers.Jiji
-    ? { x: centers.Jiji.x, y: -2, z: centers.Jiji.z }
+    ? { x: centers.Jiji.x, y: 2, z: centers.Jiji.z }
     : JIJI
 
   const jumiaCount = nodes.filter((n) => n.site === 'Jumia').length
@@ -52,50 +51,47 @@ export default function SpaceScene({
       <VolumeDust galaxyPos={[jumiaCenter.x, 0, jumiaCenter.z]} />
       <DustClouds />
 
-      <GalaxySpill position={[jumiaCenter.x, 0, jumiaCenter.z]} color="#ff8a30" radius={radius * 1.1} />
-      <GalaxySpill position={[jijiCenter.x, jijiCenter.y, jijiCenter.z]} color="#22d0e8" radius={radius * 0.75} />
+      <GalaxySpill position={[jumiaCenter.x, jumiaCenter.y, jumiaCenter.z]} color="#ff8a30" radius={radius * 0.85} />
+      <GalaxySpill position={[jijiCenter.x, jijiCenter.y, jijiCenter.z]} color="#22d0e8" radius={radius * 1.1} />
 
       <BackgroundPlanets />
 
-      {/* Jumia — larger orange */}
+      {/* Jumia — larger orange; products ride the rotating arms */}
+      {/* Jumia — smaller orange */}
       <Galaxy
         center={jumiaCenter}
-        radius={radius}
+        radius={radius * 0.78}
         theme="orange"
         spin={0.028}
+        products={nodes.filter((n) => n.site === 'Jumia')}
+        selectedId={selectedId}
+        onSelect={(n) => onSelect(n?.id ?? n)}
       />
       <GalaxyLabel
         center={jumiaCenter}
         site="Jumia"
         count={jumiaCount}
         color="#ff9a2a"
-        galaxyRadius={radius}
+        galaxyRadius={radius * 0.78}
       />
 
-      {/* Jiji — smaller cyan */}
+      {/* Jiji — larger cyan (more products) */}
       <Galaxy
         center={jijiCenter}
-        radius={radius * 0.72}
+        radius={radius}
         theme="cyan"
         spin={0.035}
+        products={nodes.filter((n) => n.site === 'Jiji')}
+        selectedId={selectedId}
+        onSelect={(n) => onSelect(n?.id ?? n)}
       />
       <GalaxyLabel
         center={jijiCenter}
         site="Jiji"
         count={jijiCount}
         color="#22d8f0"
-        galaxyRadius={radius * 0.72}
+        galaxyRadius={radius}
       />
-
-      {/* Product cards in arms */}
-      {nodes.map((node) => (
-        <ProductNode
-          key={node.id}
-          node={node}
-          isSelected={node.id === selectedId}
-          onSelect={(n) => onSelect(n?.id ?? n)}
-        />
-      ))}
 
       <ForegroundDust />
       <CameraRig selectedNode={nodes.find((n) => n.id === selectedId) ?? null} />

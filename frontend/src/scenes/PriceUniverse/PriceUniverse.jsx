@@ -50,7 +50,7 @@ function PriceUniverse({ searchValue = '' }) {
         />
         <EffectComposer>
           <Bloom
-            intensity={0.65}
+            intensity={0.8}
             luminanceThreshold={0.4}
             luminanceSmoothing={0.3}
             mipmapBlur

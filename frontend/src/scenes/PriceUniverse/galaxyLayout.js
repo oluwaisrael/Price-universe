@@ -21,8 +21,8 @@
 
 // ─── Scene placement (hero text clears left column) ──────────────────────────
 const GALAXY_CENTERS = {
-  Jumia: { x: 52, z: -2 },
-  Jiji:  { x: 102, z: -22 },
+  Jumia: { x: 102, z: -30 },
+  Jiji:  { x: 62, z: -2 },
 }
 const DEFAULT_GALAXY_CENTER = { x: 0, z: 0 }
 
@@ -30,19 +30,19 @@ const MIN_HEIGHT = -2.0
 const MAX_HEIGHT = 3.5
 
 // Silhouette — compact multi-arm like the mockup
-const GALAXY_RADIUS = 32
-const CORE_RADIUS = 1.0
+const GALAXY_RADIUS = 40
+// Match Galaxy.jsx particle spiral: r0 = R*0.07, rMax = R*1.05
+const CORE_RADIUS = GALAXY_RADIUS * 0.07
 const ARM_COUNT = 4
-const SPIRAL_TURNS = 0.95          // clear orbits without over-long arms
-// Negative pitch = opposite wind direction
-const SPIRAL_PITCH = -(SPIRAL_TURNS * Math.PI * 2) / Math.log(GALAXY_RADIUS / CORE_RADIUS)
+const SPIRAL_TURNS = 1.08
+const SPIRAL_PITCH = -(SPIRAL_TURNS * Math.PI * 2) / Math.log(1.05 / 0.07)
 
 // Arm thickness (world units) — scaled to compact radius
 const SIGMA_RIDGE = 0.55
 const SIGMA_CLOUD = 2.8
 const SIGMA_FRINGE = 5.0
 // Products sit tightly on the arm ridge
-const SIGMA_PRODUCT = 0.7
+const SIGMA_PRODUCT = 0.35
 
 // Particle budget (~20k total for both galaxies)
 const ARM_RIDGE_PER_ARM = 220
@@ -51,10 +51,12 @@ const INTERARM_PER_GALAXY = 450
 const CORE_POINTS_PER_GALAXY = 900
 const HALO_PER_GALAXY = 600
 
-// Stronger tilt so the disc reads edge-on like the mockup (~48°)
-const DISC_TILT_RAD = (48 * Math.PI) / 180
-const VERTICAL_ARM = 1.35
-const VERTICAL_CORE = 1.15
+// Match Galaxy.jsx group rotation={[-0.55, 0.12, 0.1]} so products sit on arms
+const GALAXY_ROT_X = -0.55
+const GALAXY_ROT_Y = 0.12
+const GALAXY_ROT_Z = 0.1
+const VERTICAL_ARM = 0.9
+const VERTICAL_CORE = 0.7
 
 // ─── Deterministic hash ──────────────────────────────────────────────────────
 function hashToUnit(str) {
@@ -81,10 +83,25 @@ function galaxyCenter(site) {
   return GALAXY_CENTERS[site] ?? DEFAULT_GALAXY_CENTER
 }
 
+/** Apply same Euler XYZ rotation as Galaxy mesh group */
 function tiltDiscPoint(x, y, z) {
-  const cos = Math.cos(DISC_TILT_RAD)
-  const sin = Math.sin(DISC_TILT_RAD)
-  return { x, y: y * cos - z * sin, z: y * sin + z * cos }
+  // Rz
+  let cos = Math.cos(GALAXY_ROT_Z), sin = Math.sin(GALAXY_ROT_Z)
+  let x1 = x * cos - y * sin
+  let y1 = x * sin + y * cos
+  let z1 = z
+  // Ry
+  cos = Math.cos(GALAXY_ROT_Y); sin = Math.sin(GALAXY_ROT_Y)
+  let x2 = x1 * cos + z1 * sin
+  let y2 = y1
+  let z2 = -x1 * sin + z1 * cos
+  // Rx
+  cos = Math.cos(GALAXY_ROT_X); sin = Math.sin(GALAXY_ROT_X)
+  return {
+    x: x2,
+    y: y2 * cos - z2 * sin,
+    z: y2 * sin + z2 * cos,
+  }
 }
 
 /**
@@ -92,13 +109,15 @@ function tiltDiscPoint(x, y, z) {
  * layer: 'ridge' | 'cloud' | 'fringe' | 'product'
  */
 function sampleArmPoint(site, armIndex, t, seed, layer = 'cloud') {
-  const armJitter = (hashToUnit(`${site}-armjit-${armIndex}`) - 0.5) * 0.22
+  // Exact same phase as Galaxy.jsx: (arm/N)*2π + (hash(arm)-0.5)*0.1
+  const armJitter = (hashToUnit(`garm-${armIndex}`) - 0.5) * 0.1
   const armOffset = (armIndex / ARM_COUNT) * Math.PI * 2 + armJitter
 
-  // γ < 1 pushes more samples outward so arms read at the rim
-  const gamma = layer === 'ridge' ? 0.85 : 0.72
-  const radius = CORE_RADIUS + Math.pow(Math.max(t, 1e-4), gamma) * (GALAXY_RADIUS - CORE_RADIUS)
-  const theta = armOffset + SPIRAL_PITCH * Math.log(radius / CORE_RADIUS)
+  // Match Galaxy particle radial mapping (near-linear t → r)
+  const gamma = layer === 'product' ? 1.0 : layer === 'ridge' ? 0.85 : 0.75
+  const rMax = GALAXY_RADIUS * 1.05
+  const radius = CORE_RADIUS + Math.pow(Math.max(t, 1e-4), gamma) * (rMax - CORE_RADIUS)
+  const theta = armOffset + SPIRAL_PITCH * Math.log(Math.max(radius, CORE_RADIUS * 1.01) / CORE_RADIUS)
 
   // Gaussian mixture width by layer
   let sigma = SIGMA_CLOUD
@@ -106,8 +125,8 @@ function sampleArmPoint(site, armIndex, t, seed, layer = 'cloud') {
   else if (layer === 'fringe') sigma = SIGMA_FRINGE
   else if (layer === 'product') sigma = SIGMA_PRODUCT
 
-  // Arms thicken slightly with radius (natural look)
-  sigma *= 0.75 + 0.55 * t
+  // Arms thicken slightly with radius; products stay tight
+  sigma *= layer === 'product' ? (0.85 + 0.2 * t) : (0.75 + 0.55 * t)
 
   const g = gaussianFromSeed(seed)
   const perp = g * sigma
@@ -121,10 +140,13 @@ function sampleArmPoint(site, armIndex, t, seed, layer = 'cloud') {
 
   const x = baseX + px * perp
   const z = baseZ + pz * perp
-  const y = gaussianFromSeed(`${seed}-y`) * VERTICAL_ARM * (layer === 'ridge' ? 0.45 : 0.85)
+  // Products: flat disc coords (tilt comes from parent Galaxy group rotation)
+  // Other layers: apply tilt for any world-space fillers
+  const yMul = layer === 'product' ? 0.08 : layer === 'ridge' ? 0.35 : 0.7
+  const y = gaussianFromSeed(`${seed}-y`) * VERTICAL_ARM * yMul
 
-  const tilted = tiltDiscPoint(x, y, z)
-  return tilted
+  if (layer === 'product') return { x, y, z }
+  return tiltDiscPoint(x, y, z)
 }
 
 // ─── Product placement: ON arms, avoid core, soft clusters ───────────────────
@@ -181,11 +203,21 @@ export function computeGalaxyLayout(nodes) {
     }
 
     // Mild price height — secondary to arm embedding
-    const priceNudge = MIN_HEIGHT * 0.3 + priceScale * (MAX_HEIGHT - MIN_HEIGHT) * 0.35
+    // Tiny height variation only — keep cards on the arm plane
+    const priceNudge = (priceScale - 0.5) * 0.6
+
+    // localPosition = coords inside the rotating Galaxy group (planets on arms)
+    // Jiji galaxy is scaled 0.78x — scale local arm coords to match
+    const siteScale = node.site === 'Jumia' ? 0.78 : 1
+    const yOffset = node.site === 'Jiji' ? 2 : -20
+    const lx = x * siteScale
+    const ly = (y + priceNudge) * siteScale
+    const lz = z * siteScale
 
     return {
       ...node,
-      position: [center.x + x, y + priceNudge, center.z + z],
+      localPosition: [lx, ly, lz],
+      position: [center.x + lx, ly + yOffset, center.z + lz],
       visualScale,
       site: node.site,
     }
