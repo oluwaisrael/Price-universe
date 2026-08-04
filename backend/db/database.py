@@ -7,6 +7,10 @@ pool = None
 async def connect_db():
     global pool
     pool = await asyncpg.create_pool(DATABASE_URL, min_size=1, max_size=5)
+
+    await ensure_price_history_table()
+    await ensure_tracked_table()
+    
 async def disconnect_db():
     if pool:
         await pool.close()
@@ -205,6 +209,23 @@ async def get_stats():
         "price_drops_today": int(price_drops_today or 0),
     }
 
+
+async def ensure_price_history_table():
+    """Create price_history table if missing."""
+    async with pool.acquire() as conn:
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS price_history (
+                id SERIAL PRIMARY KEY,
+                product_name TEXT,
+                price DOUBLE PRECISION,
+                url TEXT NOT NULL,
+                site TEXT,
+                category TEXT,
+                seller TEXT,
+                image_url TEXT,
+                scraped_at TIMESTAMPTZ DEFAULT NOW()
+            );
+        """)
 
 async def ensure_tracked_table():
     """Create tracked_products table if missing."""
