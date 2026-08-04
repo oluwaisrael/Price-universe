@@ -1,4 +1,5 @@
 import styles from './StatsCards.module.css'
+import { useStats } from '../../hooks/useStats'
 
 function CubeIcon() {
   return (
@@ -28,34 +29,42 @@ function TrendIcon() {
   )
 }
 
-const STATS = [
-  {
-    id: 'tracked',
-    icon: CubeIcon,
-    value: '12,543',
-    label: 'Products tracked',
-    accent: 'purple',
-  },
-  {
-    id: 'drops',
-    icon: BellIcon,
-    value: '2,341',
-    label: 'Price drops today',
-    accent: 'orange',
-  },
-  {
-    id: 'accuracy',
-    icon: TrendIcon,
-    value: '98%',
-    label: 'Accuracy rate',
-    accent: 'teal',
-  },
-]
+function formatNumber(n) {
+  if (n == null || Number.isNaN(n)) return '—'
+  return Number(n).toLocaleString('en-US')
+}
 
 function StatsCards() {
+  const { data, isLoading } = useStats()
+
+  const stats = [
+    {
+      id: 'tracked',
+      icon: CubeIcon,
+      value: isLoading ? '…' : formatNumber(data.productsTracked),
+      label: 'Products tracked',
+      accent: 'purple',
+    },
+    {
+      id: 'drops',
+      icon: BellIcon,
+      value: isLoading ? '…' : formatNumber(data.priceDropsToday),
+      label: 'Price drops today',
+      accent: 'orange',
+    },
+    {
+      id: 'accuracy',
+      icon: TrendIcon,
+      // Static until a real prediction accuracy metric exists
+      value: '98%',
+      label: 'Accuracy rate',
+      accent: 'teal',
+    },
+  ]
+
   return (
     <div className={styles.container}>
-      {STATS.map(({ id, icon: Icon, value, label, accent }) => (
+      {stats.map(({ id, icon: Icon, value, label, accent }) => (
         <div key={id} className={styles.card}>
           <div className={`${styles.icon} ${styles[`icon_${accent}`]}`}>
             <Icon />

@@ -15,7 +15,7 @@ export default function NebulaLayer({ galaxyPos = [48, 0, -12] }) {
 
   return (
     <mesh renderOrder={-95}>
-      <sphereGeometry args={[400, 64, 40]} />
+      <sphereGeometry args={[520, 64, 40]} />
       <shaderMaterial
         side={THREE.BackSide}
         depthWrite={false}
@@ -75,15 +75,15 @@ export default function NebulaLayer({ galaxyPos = [48, 0, -12] }) {
             // Streak / river structures
             float rivers = smoothstep(0.5, 0.8, nStreak) * 0.5;
 
-            float density = clamp(clouds * 0.68 + rivers * 0.42, 0.0, 1.0);
-            density = pow(density, 1.15); // richer structure, still mostly dark
+            float density = clamp(clouds * 0.78 + rivers * 0.55, 0.0, 1.0);
+            density = pow(density, 1.05); // richer structure, still mostly dark
 
             // Color regions
             float side = d.x * 0.5 + 0.5;
             float up = d.y * 0.5 + 0.5;
-            vec3 purple = vec3(0.18, 0.05, 0.3);
-            vec3 blue   = vec3(0.02, 0.06, 0.14);
-            vec3 teal   = vec3(0.01, 0.1, 0.14);
+            vec3 purple = vec3(0.28, 0.08, 0.42);
+            vec3 blue   = vec3(0.04, 0.1, 0.22);
+            vec3 teal   = vec3(0.02, 0.14, 0.2);
             vec3 col = mix(purple, blue, smoothstep(0.2, 0.7, side));
             col = mix(col, teal, smoothstep(0.55, 0.95, side) * (1.0 - up * 0.4));
 
@@ -98,11 +98,11 @@ export default function NebulaLayer({ galaxyPos = [48, 0, -12] }) {
 
             // Near-black void (match mockup)
             vec3 voidCol = vec3(0.0, 0.0, 0.002);
-            float amp = density * 0.34;
+            float amp = density * 0.48;
             vec3 finalCol = mix(voidCol, col, amp);
 
             // Soft atmospheric gradient (barely there)
-            finalCol += vec3(0.003, 0.003, 0.008) * (0.08 + 0.05 * up);
+            finalCol += vec3(0.006, 0.005, 0.014) * (0.12 + 0.08 * up);
 
             gl_FragColor = vec4(finalCol, 1.0);
           }

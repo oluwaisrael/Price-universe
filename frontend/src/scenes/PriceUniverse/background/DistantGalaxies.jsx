@@ -34,6 +34,9 @@ export default function DistantGalaxies() {
       { pos: [-200, 30, -340], color: '#a080ff', scale: [20, 9], rot: 0.5, o: 0.2 },
       { pos: [180, -20, -350], color: '#60b0e0', scale: [14, 6], rot: -0.4, o: 0.18 },
       { pos: [50, -80, -330], color: '#d0a0ff', scale: [13, 6], rot: 0.7, o: 0.16 },
+      { pos: [220, 45, -360], color: '#ffb080', scale: [16, 7], rot: -0.5, o: 0.2 },
+      { pos: [260, -50, -340], color: '#80d0ff', scale: [12, 5], rot: 0.3, o: 0.18 },
+      { pos: [-100, 90, -370], color: '#e0a0ff', scale: [15, 6], rot: 0.6, o: 0.15 },
     ],
     [],
   )

@@ -64,8 +64,8 @@ function PriceUniverse({ searchValue = '' }) {
         />
         <EffectComposer>
           <Bloom
-            intensity={0.55}
-            luminanceThreshold={0.4}
+            intensity={0.4}
+            luminanceThreshold={0.5}
             luminanceSmoothing={0.3}
             mipmapBlur
           />

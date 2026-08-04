@@ -61,7 +61,7 @@ export default function DustClouds() {
         map={map}
         alphaMap={map}
         transparent
-        opacity={0.14}
+        opacity={0.22}
         sizeAttenuation
         depthWrite={false}
         blending={THREE.AdditiveBlending}

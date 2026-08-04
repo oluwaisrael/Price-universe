@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import TrackModal from '../track/TrackModal'
 import styles from './Navbar.module.css'
 
 function BellIcon() {
@@ -18,28 +20,41 @@ function TrackIcon() {
 }
 
 function Navbar({ transparent = false }) {
+  const [trackOpen, setTrackOpen] = useState(false)
+
   return (
-    <header className={`${styles.navbar} ${transparent ? styles.navbarTransparent : ''}`}>
-      <div className={styles.left}>
-        <div className={styles.logoIcon}>✦</div>
-        <span className={styles.logo}>Price Intelligence</span>
-      </div>
-      <nav className={styles.center}>
-        <a href="/" className={`${styles.navLink} ${styles.navLinkActive}`}>Home</a>
-        <a href="#products" className={styles.navLink}>Products</a>
-        <a href="#about" className={styles.navLink}>About</a>
-        <a href="#how-it-works" className={styles.navLink}>How it works</a>
-      </nav>
-      <div className={styles.right}>
-        <button className={styles.trackButton}>
-          <TrackIcon />
-          Track a Product
-        </button>
-        <button className={styles.bellButton} aria-label="Notifications">
-          <BellIcon />
-        </button>
-      </div>
-    </header>
+    <>
+      <header className={`${styles.navbar} ${transparent ? styles.navbarTransparent : ''}`}>
+        <div className={styles.left}>
+          <div className={styles.logoIcon}>✦</div>
+          <span className={styles.logo}>Price Intelligence</span>
+        </div>
+        <nav className={styles.center}>
+          <a href="/" className={`${styles.navLink} ${styles.navLinkActive}`}>
+            Home
+          </a>
+          <a href="#products" className={styles.navLink}>
+            Products
+          </a>
+          <a href="#about" className={styles.navLink}>
+            About
+          </a>
+          <a href="#how-it-works" className={styles.navLink}>
+            How it works
+          </a>
+        </nav>
+        <div className={styles.right}>
+          <button type="button" className={styles.trackButton} onClick={() => setTrackOpen(true)}>
+            <TrackIcon />
+            Track a Product
+          </button>
+          <button type="button" className={styles.bellButton} aria-label="Notifications">
+            <BellIcon />
+          </button>
+        </div>
+      </header>
+      <TrackModal open={trackOpen} onClose={() => setTrackOpen(false)} />
+    </>
   )
 }
 

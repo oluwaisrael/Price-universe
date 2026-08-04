@@ -339,17 +339,39 @@ export default function BackgroundPlanets() {
       { id: 'c3', position: [72, 2, 55], scale: 1.0, seed: 15.2, tumble: [0.3, 0.18, 0.22], drift: [0.7, 1.2, 0.4] },
       { id: 'd1', position: [185, -45, -130], scale: 7.5, seed: 16.8, tumble: [0.03, 0.04, 0.03], drift: [3.5, 2, 1.8] },
       { id: 'd2', position: [-170, 55, -145], scale: 6.5, seed: 17.4, tumble: [0.035, 0.03, 0.04], drift: [3, 2.2, 1.4] },
+      // Fill empty right / mid voids
+      { id: 'e1', position: [280, 35, -90], scale: 4.2, seed: 18.1, tumble: [0.06, 0.08, 0.05], drift: [2.2, 1.5, 1] },
+      { id: 'e2', position: [270, -90, -70], scale: 3.5, seed: 19.3, tumble: [0.09, 0.07, 0.1], drift: [1.8, 2, 0.9] },
+      { id: 'e3', position: [310, -30, -120], scale: 5.0, seed: 20.2, tumble: [0.04, 0.05, 0.04], drift: [2.5, 1.6, 1.3] },
+      { id: 'e4', position: [240, 110, -100], scale: 2.8, seed: 21.5, tumble: [0.11, 0.13, 0.08], drift: [1.4, 1.8, 0.7] },
+      { id: 'e5', position: [200, -130, -80], scale: 3.8, seed: 22.0, tumble: [0.07, 0.09, 0.06], drift: [2, 1.4, 1.1] },
+      { id: 'e6', position: [330, 50, -160], scale: 6.0, seed: 23.4, tumble: [0.03, 0.04, 0.03], drift: [3, 2, 1.5] },
+      { id: 'e7', position: [20, -150, -90], scale: 2.5, seed: 24.1, tumble: [0.14, 0.1, 0.12], drift: [1.2, 1.6, 0.8] },
+      { id: 'e8', position: [50, 140, -120], scale: 3.0, seed: 25.6, tumble: [0.08, 0.11, 0.07], drift: [1.6, 1.9, 0.9] },
+      { id: 'f1', position: [-140, -80, -90], scale: 4.0, seed: 26.2, tumble: [0.06, 0.08, 0.05], drift: [2.1, 1.7, 1.2] },
+      { id: 'f2', position: [-50, -100, -40], scale: 2.2, seed: 27.8, tumble: [0.16, 0.12, 0.14], drift: [1.3, 1.5, 0.6] },
+      { id: 'f3', position: [30, -85, -20], scale: 1.8, seed: 28.3, tumble: [0.2, 0.15, 0.18], drift: [1, 1.3, 0.5] },
+      { id: 'f4', position: [55, 100, -60], scale: 2.0, seed: 29.1, tumble: [0.18, 0.14, 0.16], drift: [1.1, 1.4, 0.6] },
+      { id: 'f5', position: [-200, -30, -100], scale: 5.5, seed: 30.5, tumble: [0.04, 0.05, 0.04], drift: [2.8, 1.9, 1.4] },
     ],
     [],
   )
 
   return (
     <group>
-      {/* Cinematic futuristic planets — large, premium, dramatic lighting */}
-      <Planet position={[190, 60, -150]} scale={26} type="earth" rotSpeed={0.006} />
-      <Planet position={[-165, -48, -160]} scale={22} type="alien" rotSpeed={0.009} />
-      <Planet position={[135, -90, -140]} scale={20} type="gas" rotSpeed={0.011} />
-      <Planet position={[-120, 80, -180]} scale={16} type="icy" rotSpeed={0.005} />
+      {/* Scattered across the full volume — corners, depths, not clustered */}
+      <Planet position={[210, 95, -200]} scale={24} type="earth" rotSpeed={0.006} />
+      <Planet position={[-190, -70, -210]} scale={20} type="alien" rotSpeed={0.009} />
+      <Planet position={[55, -130, -180]} scale={18} type="gas" rotSpeed={0.011} />
+      <Planet position={[-140, 110, -240]} scale={15} type="icy" rotSpeed={0.005} />
+      <Planet position={[300, -55, -160]} scale={13} type="icy" rotSpeed={0.007} />
+      <Planet position={[180, 130, -260]} scale={11} type="alien" rotSpeed={0.01} />
+      <Planet position={[-60, -140, -120]} scale={12} type="gas" rotSpeed={0.008} />
+      <Planet position={[320, 40, -280]} scale={16} type="gas" rotSpeed={0.004} />
+      <Planet position={[-220, 30, -150]} scale={10} type="earth" rotSpeed={0.005} />
+      <Planet position={[90, 140, -220]} scale={9} type="icy" rotSpeed={0.012} />
+      <Planet position={[260, -120, -200]} scale={14} type="alien" rotSpeed={0.007} />
+      <Planet position={[-100, -20, -300]} scale={17} type="gas" rotSpeed={0.006} />
 
       {/* Near-black matte asteroids */}
       {asteroids.map((a) => (

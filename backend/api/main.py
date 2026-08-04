@@ -9,6 +9,10 @@ from db.database import (
     get_product_history,
     get_latest_products_missing_images,
     update_product_image,
+    get_stats,
+    add_tracked_product,
+    list_tracked_products,
+    ensure_tracked_table,
 )
 from scrapers.jumia_scraper import JumiaScraper
 from scrapers.jiji_scraper import JijiScraper
@@ -41,6 +45,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup():
     await connect_db()
+    await ensure_tracked_table()
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -130,6 +135,50 @@ async def product_history(url: str, site: str = None):
     if not history:
         raise HTTPException(status_code=404, detail="No history found for that url/site")
     return {"url": url, "count": len(history), "history": history}
+
+@app.get("/api/stats")
+async def stats():
+    """Live hero stats: products tracked + price drops today."""
+    return await get_stats()
+
+
+from pydantic import BaseModel, HttpUrl
+from typing import Optional
+
+class TrackRequest(BaseModel):
+    url: str
+    email: Optional[str] = None
+
+
+def _detect_site(url: str) -> str:
+    u = (url or "").lower()
+    if "jumia." in u:
+        return "Jumia"
+    if "jiji." in u:
+        return "Jiji"
+    return "Unknown"
+
+
+@app.post("/api/track")
+async def track_product(body: TrackRequest):
+    """Add a Jumia/Jiji product URL to the watchlist."""
+    url = (body.url or "").strip()
+    if not url.startswith("http"):
+        raise HTTPException(status_code=400, detail="A valid product URL is required")
+    site = _detect_site(url)
+    if site == "Unknown":
+        raise HTTPException(status_code=400, detail="Only Jumia and Jiji product URLs are supported")
+    row = await add_tracked_product(url=url, site=site, email=body.email)
+    return {"ok": True, "tracked": row}
+
+
+@app.get("/api/tracked")
+async def get_tracked(limit: int = 100):
+    """List products on the watchlist."""
+    items = await list_tracked_products(limit=limit)
+    return {"count": len(items), "tracked": items}
+
+
 @app.get("/api/image-proxy")
 async def image_proxy(url: str):
     """

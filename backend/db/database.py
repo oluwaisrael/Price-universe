@@ -160,3 +160,98 @@ async def get_product_history(url: str, site: str = None):
         rows = await conn.fetch(query, *args)
 
     return [dict(r) for r in rows]
+
+
+async def get_stats():
+    """
+    Live dashboard stats for the hero section.
+    - products_tracked: distinct (url, site) with a latest row
+    - price_drops_today: products whose latest scrape today is lower than previous
+    """
+    async with pool.acquire() as conn:
+        products_tracked = await conn.fetchval(
+            """
+            SELECT COUNT(*) FROM (
+                SELECT DISTINCT url, site FROM price_history
+            ) AS t
+            """
+        )
+
+        # Price drops today: for each product, if the most recent row today
+        # is lower than the previous row, count it.
+        price_drops_today = await conn.fetchval(
+            """
+            WITH ordered AS (
+                SELECT
+                    url,
+                    site,
+                    price,
+                    scraped_at,
+                    LAG(price) OVER (
+                        PARTITION BY url, site
+                        ORDER BY scraped_at
+                    ) AS prev_price
+                FROM price_history
+            )
+            SELECT COUNT(*) FROM ordered
+            WHERE prev_price IS NOT NULL
+              AND price < prev_price
+              AND scraped_at >= date_trunc('day', NOW() AT TIME ZONE 'Africa/Lagos')
+            """
+        )
+
+    return {
+        "products_tracked": int(products_tracked or 0),
+        "price_drops_today": int(price_drops_today or 0),
+    }
+
+
+async def ensure_tracked_table():
+    """Create tracked_products table if missing."""
+    async with pool.acquire() as conn:
+        await conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS tracked_products (
+                id SERIAL PRIMARY KEY,
+                url TEXT NOT NULL,
+                site TEXT,
+                email TEXT,
+                product_name TEXT,
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                UNIQUE (url)
+            )
+            """
+        )
+
+
+async def add_tracked_product(url: str, site: str = None, email: str = None, product_name: str = None):
+    await ensure_tracked_table()
+    async with pool.acquire() as conn:
+        row = await conn.fetchrow(
+            """
+            INSERT INTO tracked_products (url, site, email, product_name)
+            VALUES ($1, $2, $3, $4)
+            ON CONFLICT (url) DO UPDATE SET
+                email = COALESCE(EXCLUDED.email, tracked_products.email),
+                site = COALESCE(EXCLUDED.site, tracked_products.site),
+                product_name = COALESCE(EXCLUDED.product_name, tracked_products.product_name)
+            RETURNING id, url, site, email, product_name, created_at
+            """,
+            url, site, email, product_name,
+        )
+    return dict(row) if row else None
+
+
+async def list_tracked_products(limit: int = 100):
+    await ensure_tracked_table()
+    async with pool.acquire() as conn:
+        rows = await conn.fetch(
+            """
+            SELECT id, url, site, email, product_name, created_at
+            FROM tracked_products
+            ORDER BY created_at DESC
+            LIMIT $1
+            """,
+            limit,
+        )
+    return [dict(r) for r in rows]

@@ -142,7 +142,7 @@ function sampleArmPoint(site, armIndex, t, seed, layer = 'cloud') {
   const z = baseZ + pz * perp
   // Products: flat disc coords (tilt comes from parent Galaxy group rotation)
   // Other layers: apply tilt for any world-space fillers
-  const yMul = layer === 'product' ? 1.1 : layer === 'ridge' ? 0.35 : 0.7
+  const yMul = layer === 'product' ? 1.4 : layer === 'ridge' ? 0.35 : 0.7
   const y = gaussianFromSeed(`${seed}-y`) * VERTICAL_ARM * yMul
 
   if (layer === 'product') return { x, y, z }

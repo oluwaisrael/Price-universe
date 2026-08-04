@@ -116,36 +116,40 @@ function buildGalaxy(radius, COL) {
     push(x, y, z, col, (0.55 - t * 0.25) * (0.75 + hash(i, 13) * 0.25))
   }
 
-  // ── Spiral arms — dense volumetric dust rivers ──────────────
+  // ── Spiral arms — thick core, thin edges (density falloff) ──
   for (let arm = 0; arm < ARM_COUNT; arm++) {
     const phase = (arm / ARM_COUNT) * Math.PI * 2 + (hash(arm, 20) - 0.5) * 0.1
-    const samples = 6000
+    const samples = 7000
 
     for (let i = 0; i < samples; i++) {
-      const t = Math.pow(i / (samples - 1), 0.75)
-      if (t < 0.04) continue
+      // Bias samples toward core (thicker center, thinner rim)
+      const u = i / (samples - 1)
+      const t = Math.pow(u, 1.15) // more mass near center
+      if (t < 0.03) continue
 
-      // Soft gaps for organic structure
-      if (Math.sin(t * Math.PI * 6.5 + arm * 1.8) > 0.96 && hash(i + arm * 500, 21) < 0.3) continue
-      // Density wave — denser mid-arm
+      // Radial density falloff: keep almost all near core, cull outer
+      const radialKeep = Math.pow(1 - t, 1.4) // strong outer fade
+      if (hash(i, 22) > 0.25 + radialKeep * 0.75) continue
+
+      // Soft organic gaps
+      if (Math.sin(t * Math.PI * 6.5 + arm * 1.8) > 0.96 && hash(i + arm * 500, 21) < 0.35) continue
       const densityWave = 0.5 + 0.5 * Math.pow(0.5 + 0.5 * Math.sin(t * Math.PI * 11 + arm), 1.3)
-      if (hash(i, 22) > 0.55 + densityWave * 0.45) continue
 
       const r = r0 + t * (rMax - r0)
       const theta = phase + kLog * Math.log(r / r0)
 
-      // Width grows outward, stays tight to ridge for clear lanes
-      const sigma = radius * (0.022 + 0.045 * t)
+      // Thick near core, thin at edges
+      const sigma = radius * (0.04 * (1 - t * 0.55) + 0.012 + 0.028 * t)
       const ridge = gauss(i + arm * 1000, 23)
-      if (Math.abs(ridge) > 2.2 && hash(i, 24) < 0.6) continue
+      if (Math.abs(ridge) > 2.0 && hash(i, 24) < 0.55) continue
       const turb = Math.sin(t * 30 + arm * 5) * 0.12
-      const side = ridge * sigma * 0.45 + turb * sigma * 0.25
-      const y = gauss(i + arm * 1000, 25) * sigma * 0.3
+      const side = ridge * sigma * 0.5 + turb * sigma * 0.22
+      // More vertical depth (± disc thickness)
+      const y = gauss(i + arm * 1000, 25) * sigma * 0.55
 
       const x = Math.cos(theta) * r + Math.cos(theta + Math.PI / 2) * side
       const z = Math.sin(theta) * r + Math.sin(theta + Math.PI / 2) * side
 
-      // Color by radius
       let col
       if (t < 0.12) col = hash(i, 26) < 0.5 ? COL.gold : COL.amber
       else if (t < 0.35) col = hash(i, 26) < 0.5 ? COL.amber : COL.arm
@@ -153,15 +157,15 @@ function buildGalaxy(radius, COL) {
       else col = hash(i, 26) < 0.5 ? COL.deep : COL.ember
 
       const ridgeBoost = 1 - Math.min(1, Math.abs(ridge) * 0.25)
+      // Brighter core, dimmer rim
       const bright =
-        (0.7 + hash(i, 27) * 0.35) *
+        (0.85 + hash(i, 27) * 0.3) *
         ridgeBoost *
-        Math.pow(1 - t * 0.3, 0.55) *
-        (0.9 + densityWave * 0.15)
+        Math.pow(1 - t, 0.85) *
+        (0.9 + densityWave * 0.12)
 
-      // Rare hot stars
       if (hash(i, 28) > 0.97) {
-        push(x, y, z, COL.hot, bright * 1.2)
+        push(x, y, z, COL.hot, bright * 1.25)
       } else {
         push(x, y, z, col, bright)
       }

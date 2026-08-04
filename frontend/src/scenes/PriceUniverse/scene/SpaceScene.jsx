@@ -51,8 +51,8 @@ export default function SpaceScene({
       <VolumeDust galaxyPos={[jumiaCenter.x, 0, jumiaCenter.z]} />
       <DustClouds />
 
-      <GalaxySpill position={[jumiaCenter.x, jumiaCenter.y, jumiaCenter.z]} color="#ff8a30" radius={radius * 0.5} />
-      <GalaxySpill position={[jijiCenter.x, jijiCenter.y, jijiCenter.z]} color="#22d0e8" radius={radius * 0.55} />
+      <GalaxySpill position={[jumiaCenter.x, jumiaCenter.y, jumiaCenter.z]} color="#ff8a30" radius={radius * 0.65} />
+      <GalaxySpill position={[jijiCenter.x, jijiCenter.y, jijiCenter.z]} color="#22d0e8" radius={radius * 0.7} />
 
       <BackgroundPlanets />
 
