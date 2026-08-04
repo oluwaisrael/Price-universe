@@ -24,8 +24,8 @@ const MAX_PRICE_SCALE = 1.85
 // together into one mass when several are close. Hashed from a seed
 // string (not Math.random) so layout stays stable across re-renders,
 // matching the determinism convention already used in galaxyLayout.js.
-const ROTATION_JITTER_RAD = 0.18
-const OFFSET_JITTER = 0.35
+const ROTATION_JITTER_RAD = 0.42
+const OFFSET_JITTER = 0.7
 
 function hashToUnit(str) {
   let h = 2166136261
@@ -283,11 +283,20 @@ function ProductImage({ url, position, color = '#ffffff', name = '', priceScale 
     return baseScale * visualScale
   }, [priceScale, visualScale, seed])
 
+  // Depth cue: farther cards slightly smaller + softer (fake DOF)
+  const depthFade = useMemo(() => {
+    const z = position[2] ?? 0
+    // Local z inside galaxy is small; world z varies. Prefer radial distance from origin-ish.
+    const r = Math.sqrt((position[0] || 0) ** 2 + (position[2] || 0) ** 2)
+    const t = Math.min(1, Math.max(0, (r - 8) / 40))
+    return { opacity: 1 - t * 0.35, scale: 1 - t * 0.12 }
+  }, [position])
+
   const initial = (name?.trim?.()[0] ?? '?').toUpperCase()
 
   return (
     <Billboard position={billboardPosition}>
-      <group scale={sizeMultiplier} rotation={[0, 0, rotationZ]}>
+      <group scale={sizeMultiplier * depthFade.scale} rotation={[0, 0, rotationZ]}>
         {url ? (
           <ImageErrorBoundary
             fallback={

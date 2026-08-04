@@ -26,7 +26,7 @@ export default function GalaxySpill({ position = [48, 0, -12], color = '#ff8a30'
         map={map}
         color={color}
         transparent
-        opacity={0.12}
+        opacity={0.06}
         depthWrite={false}
         blending={THREE.AdditiveBlending}
         toneMapped={false}

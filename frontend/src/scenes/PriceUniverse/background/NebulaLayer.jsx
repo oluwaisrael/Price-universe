@@ -81,8 +81,8 @@ export default function NebulaLayer({ galaxyPos = [48, 0, -12] }) {
             // Color regions
             float side = d.x * 0.5 + 0.5;
             float up = d.y * 0.5 + 0.5;
-            vec3 purple = vec3(0.14, 0.04, 0.24);
-            vec3 blue   = vec3(0.02, 0.08, 0.18);
+            vec3 purple = vec3(0.18, 0.05, 0.3);
+            vec3 blue   = vec3(0.02, 0.06, 0.14);
             vec3 teal   = vec3(0.01, 0.1, 0.14);
             vec3 col = mix(purple, blue, smoothstep(0.2, 0.7, side));
             col = mix(col, teal, smoothstep(0.55, 0.95, side) * (1.0 - up * 0.4));
@@ -98,7 +98,7 @@ export default function NebulaLayer({ galaxyPos = [48, 0, -12] }) {
 
             // Near-black void (match mockup)
             vec3 voidCol = vec3(0.0, 0.0, 0.002);
-            float amp = density * 0.32;
+            float amp = density * 0.34;
             vec3 finalCol = mix(voidCol, col, amp);
 
             // Soft atmospheric gradient (barely there)

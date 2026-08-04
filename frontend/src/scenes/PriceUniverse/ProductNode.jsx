@@ -1,4 +1,6 @@
-import { useRef, useState } from 'react'
+import { useRef, useState, useEffect } from 'react'
+import { setProductWorldPos, clearProductWorldPos } from './productRegistry'
+import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { Html } from '@react-three/drei'
 import ProductImage from './ProductImage'
@@ -74,9 +76,16 @@ function ProductNode({ node, isSelected, onSelect }) {
     mat.emissiveIntensity += (targetEmissive - mat.emissiveIntensity) * LERP_SPEED
 
     const t = state.clock.elapsedTime + floatSeed.current
-    const floatOffset = Math.sin(t * 0.6) * 0.08
+    const floatOffset = Math.sin(t * 0.25) * 0.015
     meshRef.current.position.y = node.position[1] + floatOffset
+
+    // Publish live world position for search fly-to (tracks galaxy spin)
+    const wp = new THREE.Vector3()
+    meshRef.current.getWorldPosition(wp)
+    setProductWorldPos(node.id, wp.x, wp.y, wp.z)
   })
+
+  useEffect(() => () => clearProductWorldPos(node.id), [node.id])
 
   const showCard = isHovered && !isSelected
 

@@ -30,8 +30,22 @@ function PriceUniverse({ searchValue = '' }) {
         setSelectedId(null)
         return
       }
-      const match = nodes.find((n) => (n.name ?? '').toLowerCase().includes(query))
-      setSelectedId(match ? match.id : null)
+      // Prefer exact name match, then startsWith, then includes
+      const q = query
+      const scored = nodes
+        .map((n) => {
+          const name = (n.name ?? '').toLowerCase()
+          const site = (n.site ?? '').toLowerCase()
+          let score = 0
+          if (name === q) score = 100
+          else if (name.startsWith(q)) score = 80
+          else if (name.includes(q)) score = 50
+          else if (site.includes(q)) score = 20
+          return { n, score }
+        })
+        .filter((x) => x.score > 0)
+        .sort((a, b) => b.score - a.score)
+      setSelectedId(scored[0]?.n.id ?? null)
     }, SEARCH_DEBOUNCE_MS)
     return () => clearTimeout(debounceRef.current)
   }, [searchValue, nodes])
@@ -39,7 +53,7 @@ function PriceUniverse({ searchValue = '' }) {
   return (
     <div className={styles.canvasWrapper}>
       <Canvas
-        camera={{ position: [28, 32, 95], fov: 48, far: 2000 }}
+        camera={{ position: [70, 28, 125], fov: 48, far: 2000 }}
         dpr={[1, 1.75]}
         onPointerMissed={() => setSelectedId(null)}
       >
@@ -50,7 +64,7 @@ function PriceUniverse({ searchValue = '' }) {
         />
         <EffectComposer>
           <Bloom
-            intensity={0.8}
+            intensity={0.55}
             luminanceThreshold={0.4}
             luminanceSmoothing={0.3}
             mipmapBlur

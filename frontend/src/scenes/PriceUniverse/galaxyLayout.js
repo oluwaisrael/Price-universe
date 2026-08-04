@@ -21,8 +21,8 @@
 
 // ─── Scene placement (hero text clears left column) ──────────────────────────
 const GALAXY_CENTERS = {
-  Jumia: { x: 102, z: -30 },
-  Jiji:  { x: 62, z: -2 },
+  Jumia: { x: 168, z: -30 },
+  Jiji:  { x: 132, z: -4 },
 }
 const DEFAULT_GALAXY_CENTER = { x: 0, z: 0 }
 
@@ -30,19 +30,19 @@ const MIN_HEIGHT = -2.0
 const MAX_HEIGHT = 3.5
 
 // Silhouette — compact multi-arm like the mockup
-const GALAXY_RADIUS = 40
+const GALAXY_RADIUS = 64
 // Match Galaxy.jsx particle spiral: r0 = R*0.07, rMax = R*1.05
 const CORE_RADIUS = GALAXY_RADIUS * 0.07
-const ARM_COUNT = 4
-const SPIRAL_TURNS = 1.08
+const ARM_COUNT = 6
+const SPIRAL_TURNS = 1.15
 const SPIRAL_PITCH = -(SPIRAL_TURNS * Math.PI * 2) / Math.log(1.05 / 0.07)
 
 // Arm thickness (world units) — scaled to compact radius
-const SIGMA_RIDGE = 0.55
-const SIGMA_CLOUD = 2.8
-const SIGMA_FRINGE = 5.0
+const SIGMA_RIDGE = 0.4
+const SIGMA_CLOUD = 1.8
+const SIGMA_FRINGE = 3.2
 // Products sit tightly on the arm ridge
-const SIGMA_PRODUCT = 0.35
+const SIGMA_PRODUCT = 1.1
 
 // Particle budget (~20k total for both galaxies)
 const ARM_RIDGE_PER_ARM = 220
@@ -142,7 +142,7 @@ function sampleArmPoint(site, armIndex, t, seed, layer = 'cloud') {
   const z = baseZ + pz * perp
   // Products: flat disc coords (tilt comes from parent Galaxy group rotation)
   // Other layers: apply tilt for any world-space fillers
-  const yMul = layer === 'product' ? 0.08 : layer === 'ridge' ? 0.35 : 0.7
+  const yMul = layer === 'product' ? 1.1 : layer === 'ridge' ? 0.35 : 0.7
   const y = gaussianFromSeed(`${seed}-y`) * VERTICAL_ARM * yMul
 
   if (layer === 'product') return { x, y, z }
@@ -161,13 +161,26 @@ function spiralPosition(id, index, total = 1) {
 
   const armPick = Math.floor(hashToUnit(`${index}-${id}-arm`) * ARM_COUNT) % ARM_COUNT
 
-  // Light clustering: groups of 3 share a small bias along the arm
-  const groupId = Math.floor(index / 3)
-  const groupT = (hashToUnit(`${id}-grp-${groupId}-t`) - 0.5) * 0.04
-  t = Math.min(0.96, Math.max(0.15, t + groupT))
+  // Stronger clustering + sparse gaps (organic, not uniform)
+  const groupId = Math.floor(index / 4)
+  const groupT = (hashToUnit(`${id}-grp-${groupId}-t`) - 0.5) * 0.1
+  const clusterNudge = (hashToUnit(`${id}-cl-${index}`) - 0.5) * 0.04
+  // Bias some products into dense mid-arm bands, leave gaps near 0.4 and 0.7
+  const band = hashToUnit(`${id}-band`)
+  if (band < 0.35) t = 0.18 + hashToUnit(`${id}-b1`) * 0.22
+  else if (band < 0.7) t = 0.45 + hashToUnit(`${id}-b2`) * 0.2
+  else t = 0.72 + hashToUnit(`${id}-b3`) * 0.2
+  t = Math.min(0.96, Math.max(0.14, t + groupT + clusterNudge))
 
   const local = sampleArmPoint('prod', armPick, t, `${index}-${id}`, 'product')
-  return local
+  // Extra radial drift: push some inside / outside the arm lane
+  const drift = (hashToUnit(`${id}-drift`) - 0.5) * 2.4
+  const ang = Math.atan2(local.z, local.x)
+  return {
+    x: local.x + Math.cos(ang) * drift,
+    y: local.y,
+    z: local.z + Math.sin(ang) * drift,
+  }
 }
 
 export function computeGalaxyLayout(nodes) {
@@ -192,14 +205,17 @@ export function computeGalaxyLayout(nodes) {
     const priceScale =
       maxPrice > minPrice ? (node.price - minPrice) / (maxPrice - minPrice) : 0.5
 
+    // Wide size tiers for depth (tiny / medium / large / hero)
     const sizeRoll = hashToUnit(`${node.id}-visscale`)
     let visualScale
-    if (sizeRoll < 0.55) {
-      visualScale = 0.7 + priceScale * 0.25 + hashToUnit(`${node.id}-sv`) * 0.15
-    } else if (sizeRoll < 0.88) {
-      visualScale = 1.0 + priceScale * 0.35 + hashToUnit(`${node.id}-sv`) * 0.2
+    if (sizeRoll < 0.35) {
+      visualScale = 0.45 + priceScale * 0.15 + hashToUnit(`${node.id}-sv`) * 0.1
+    } else if (sizeRoll < 0.7) {
+      visualScale = 0.85 + priceScale * 0.25 + hashToUnit(`${node.id}-sv`) * 0.15
+    } else if (sizeRoll < 0.9) {
+      visualScale = 1.25 + priceScale * 0.35 + hashToUnit(`${node.id}-sv`) * 0.2
     } else {
-      visualScale = 1.35 + priceScale * 0.45 + hashToUnit(`${node.id}-sv`) * 0.25
+      visualScale = 1.7 + priceScale * 0.4 + hashToUnit(`${node.id}-sv`) * 0.3
     }
 
     // Mild price height — secondary to arm embedding
@@ -208,8 +224,8 @@ export function computeGalaxyLayout(nodes) {
 
     // localPosition = coords inside the rotating Galaxy group (planets on arms)
     // Jiji galaxy is scaled 0.78x — scale local arm coords to match
-    const siteScale = node.site === 'Jumia' ? 0.78 : 1
-    const yOffset = node.site === 'Jiji' ? 2 : -20
+    const siteScale = 1
+    const yOffset = node.site === 'Jiji' ? 8 : -20
     const lx = x * siteScale
     const ly = (y + priceNudge) * siteScale
     const lz = z * siteScale

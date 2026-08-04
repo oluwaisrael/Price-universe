@@ -32,7 +32,7 @@ function makePalette(theme = 'orange') {
     deep: new THREE.Color('#E86800'),
     ember: new THREE.Color('#C05010'),
     hot: new THREE.Color('#FFFFFF'),
-    light: '#ffe8a8',
+    light: '#fff6d0',
   }
 }
 
@@ -66,8 +66,8 @@ function makeSoftTex() {
   return t
 }
 
-const ARM_COUNT = 4
-const SPIRAL_TURNS = 1.08
+const ARM_COUNT = 6
+const SPIRAL_TURNS = 1.15
 
 function buildGalaxy(radius, COL) {
   const positions = []
@@ -119,25 +119,25 @@ function buildGalaxy(radius, COL) {
   // ── Spiral arms — dense volumetric dust rivers ──────────────
   for (let arm = 0; arm < ARM_COUNT; arm++) {
     const phase = (arm / ARM_COUNT) * Math.PI * 2 + (hash(arm, 20) - 0.5) * 0.1
-    const samples = 5500
+    const samples = 6000
 
     for (let i = 0; i < samples; i++) {
       const t = Math.pow(i / (samples - 1), 0.75)
       if (t < 0.04) continue
 
       // Soft gaps for organic structure
-      if (Math.sin(t * Math.PI * 6.5 + arm * 1.8) > 0.93 && hash(i + arm * 500, 21) < 0.45) continue
+      if (Math.sin(t * Math.PI * 6.5 + arm * 1.8) > 0.96 && hash(i + arm * 500, 21) < 0.3) continue
       // Density wave — denser mid-arm
       const densityWave = 0.5 + 0.5 * Math.pow(0.5 + 0.5 * Math.sin(t * Math.PI * 11 + arm), 1.3)
-      if (hash(i, 22) > 0.35 + densityWave * 0.65) continue
+      if (hash(i, 22) > 0.55 + densityWave * 0.45) continue
 
       const r = r0 + t * (rMax - r0)
       const theta = phase + kLog * Math.log(r / r0)
 
       // Width grows outward, stays tight to ridge for clear lanes
-      const sigma = radius * (0.028 + 0.055 * t)
+      const sigma = radius * (0.022 + 0.045 * t)
       const ridge = gauss(i + arm * 1000, 23)
-      if (Math.abs(ridge) > 1.6 && hash(i, 24) < 0.75) continue
+      if (Math.abs(ridge) > 2.2 && hash(i, 24) < 0.6) continue
       const turb = Math.sin(t * 30 + arm * 5) * 0.12
       const side = ridge * sigma * 0.45 + turb * sigma * 0.25
       const y = gauss(i + arm * 1000, 25) * sigma * 0.3
@@ -154,10 +154,10 @@ function buildGalaxy(radius, COL) {
 
       const ridgeBoost = 1 - Math.min(1, Math.abs(ridge) * 0.25)
       const bright =
-        (0.45 + hash(i, 27) * 0.4) *
+        (0.7 + hash(i, 27) * 0.35) *
         ridgeBoost *
-        Math.pow(1 - t * 0.4, 0.7) *
-        (0.85 + densityWave * 0.15)
+        Math.pow(1 - t * 0.3, 0.55) *
+        (0.9 + densityWave * 0.15)
 
       // Rare hot stars
       if (hash(i, 28) > 0.97) {
@@ -228,9 +228,9 @@ function PointsLayer({ data, size, opacity, map }) {
 
 export default function Galaxy({
   center = { x: 42, y: 2, z: -8 },
-  radius = 40,
+  radius = 64,
   theme = 'orange',
-  spin = 0.028,
+  spin = 0.012,
   products = [],
   selectedId = null,
   onSelect = () => {},
@@ -245,20 +245,20 @@ export default function Galaxy({
   })
 
   const coreCol = COL.light
-  const coreR = radius * 0.13
-  const midR = radius * 0.26
-  const outerR = radius * 0.48
+  const coreR = radius * 0.16
+  const midR = radius * 0.32
+  const outerR = radius * 0.55
 
   return (
     <group
       ref={group}
       position={[center.x, center.y ?? 0, center.z]}
-      rotation={[-0.55, 0.12, 0.1]}
+      rotation={[-0.48, 0.08, 0.06]}
     >
       {/* Dense particle body */}
-      <PointsLayer data={data} size={0.7} opacity={0.95} map={soft} />
+      <PointsLayer data={data} size={1.15} opacity={1} map={soft} />
       {/* Soft bloom layer */}
-      <PointsLayer data={data} size={1.45} opacity={0.28} map={soft} />
+      <PointsLayer data={data} size={2.0} opacity={0.28} map={soft} />
 
       {/* Multi-layer core glow */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} renderOrder={-4}>
@@ -267,7 +267,7 @@ export default function Galaxy({
           map={soft}
           color={coreCol}
           transparent
-          opacity={0.2}
+          opacity={0.22}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
@@ -279,7 +279,7 @@ export default function Galaxy({
           map={soft}
           color={coreCol}
           transparent
-          opacity={0.48}
+          opacity={0.5}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
@@ -291,13 +291,13 @@ export default function Galaxy({
           map={soft}
           color="#ffffff"
           transparent
-          opacity={0.95}
+          opacity={0.92}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
         />
       </mesh>
-      <pointLight color={coreCol} intensity={2.2} distance={radius * 2} decay={2} />
+      <pointLight color={coreCol} intensity={4.5} distance={radius * 3} decay={2} />
 
       {/* Products embedded on arms — children of rotating group = planets on orbits */}
       {products.map((node) => (

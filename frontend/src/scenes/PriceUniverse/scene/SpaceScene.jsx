@@ -13,8 +13,8 @@ import GalaxyLabel from '../GalaxyLabel'
 import { getGalaxyCenters, getGalaxyRadius } from '../galaxyLayout'
 import { SPACE } from '../utils/colors'
 
-const JUMIA = { x: 102, y: -20, z: -30 }
-const JIJI = { x: 62, y: 2, z: -2 }
+const JUMIA = { x: 168, y: -20, z: -30 }
+const JIJI = { x: 132, y: 8, z: -4 }
 
 /**
  * Full concept scene:
@@ -32,7 +32,7 @@ export default function SpaceScene({
     ? { x: centers.Jumia.x, y: -20, z: centers.Jumia.z }
     : JUMIA
   const jijiCenter = centers.Jiji
-    ? { x: centers.Jiji.x, y: 2, z: centers.Jiji.z }
+    ? { x: centers.Jiji.x, y: 8, z: centers.Jiji.z }
     : JIJI
 
   const jumiaCount = nodes.filter((n) => n.site === 'Jumia').length
@@ -51,8 +51,8 @@ export default function SpaceScene({
       <VolumeDust galaxyPos={[jumiaCenter.x, 0, jumiaCenter.z]} />
       <DustClouds />
 
-      <GalaxySpill position={[jumiaCenter.x, jumiaCenter.y, jumiaCenter.z]} color="#ff8a30" radius={radius * 0.85} />
-      <GalaxySpill position={[jijiCenter.x, jijiCenter.y, jijiCenter.z]} color="#22d0e8" radius={radius * 1.1} />
+      <GalaxySpill position={[jumiaCenter.x, jumiaCenter.y, jumiaCenter.z]} color="#ff8a30" radius={radius * 0.5} />
+      <GalaxySpill position={[jijiCenter.x, jijiCenter.y, jijiCenter.z]} color="#22d0e8" radius={radius * 0.55} />
 
       <BackgroundPlanets />
 
@@ -60,9 +60,9 @@ export default function SpaceScene({
       {/* Jumia — smaller orange */}
       <Galaxy
         center={jumiaCenter}
-        radius={radius * 0.78}
+        radius={radius}
         theme="orange"
-        spin={0.028}
+        spin={0.012}
         products={nodes.filter((n) => n.site === 'Jumia')}
         selectedId={selectedId}
         onSelect={(n) => onSelect(n?.id ?? n)}
@@ -72,7 +72,7 @@ export default function SpaceScene({
         site="Jumia"
         count={jumiaCount}
         color="#ff9a2a"
-        galaxyRadius={radius * 0.78}
+        galaxyRadius={radius}
       />
 
       {/* Jiji — larger cyan (more products) */}
@@ -80,7 +80,7 @@ export default function SpaceScene({
         center={jijiCenter}
         radius={radius}
         theme="cyan"
-        spin={0.035}
+        spin={0.015}
         products={nodes.filter((n) => n.site === 'Jiji')}
         selectedId={selectedId}
         onSelect={(n) => onSelect(n?.id ?? n)}
