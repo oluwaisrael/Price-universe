@@ -1,3 +1,23 @@
+# Environment variables
+.env
+.env.*
+
+# Python
 __pycache__/
-* .pyc
-* .pyc
+*.py[cod]
+.venv/
+venv/
+
+# Node
+node_modules/
+dist/
+build/
+
+# Archives
+*.zip
+
+# macOS
+.DS_Store
+
+# VS Code
+.vscode/
