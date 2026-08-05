@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi import Header
 import os
 from fastapi.responses import StreamingResponse
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel
 
 from db.database import (
@@ -29,7 +29,6 @@ from urllib.parse import urlparse
 from io import BytesIO
 
 import httpx
-import sys
 
 app = FastAPI()
 
