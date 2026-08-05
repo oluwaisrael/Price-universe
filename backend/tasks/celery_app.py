@@ -21,12 +21,8 @@ celery_app.conf.update(
 )
 
 celery_app.conf.beat_schedule = {
-    "scrape-jumia-every-6h": {
-        "task": "tasks.tasks.scrape_jumia_task",
-        "schedule": crontab(minute=0, hour="*/6"),
-    },
-    "scrape-jiji-every-6h": {
-        "task": "tasks.tasks.scrape_jiji_task",
-        "schedule": crontab(minute=0, hour="*/6"),
+    "scrape-every-12-hours": {
+        "task": "tasks.tasks.scrape_all_task",
+        "schedule": crontab(minute=0, hour="*/12"),
     },
 }

@@ -1,5 +1,9 @@
 from fastapi import FastAPI, HTTPException
+from fastapi import Header
+import os
 from fastapi.responses import StreamingResponse
+from typing import List
+from pydantic import BaseModel
 
 from db.database import (
     connect_db,
@@ -14,6 +18,7 @@ from db.database import (
     list_tracked_products,
     ensure_tracked_table,
 )
+
 from scrapers.jumia_scraper import JumiaScraper
 from scrapers.jiji_scraper import JijiScraper
 
@@ -25,9 +30,11 @@ from io import BytesIO
 
 import httpx
 import sys
-import os
 
 app = FastAPI()
+
+UPLOAD_API_KEY = os.getenv("UPLOAD_API_KEY", "")
+
 ALLOWED_IMAGE_HOSTS = {
     "pictures-nigeria.jijistatic.net",
     "ng.jumia.is",
@@ -141,10 +148,6 @@ async def stats():
     """Live hero stats: products tracked + price drops today."""
     return await get_stats()
 
-
-from pydantic import BaseModel, HttpUrl
-from typing import Optional
-
 class TrackRequest(BaseModel):
     url: str
     email: Optional[str] = None
@@ -158,6 +161,18 @@ def _detect_site(url: str) -> str:
         return "Jiji"
     return "Unknown"
 
+class ProductUpload(BaseModel):
+    name: str
+    price: float
+    url: str
+    site: str
+    category: str | None = None
+    seller: str | None = None
+    image: str | None = None
+
+
+class UploadRequest(BaseModel):
+    products: List[ProductUpload]
 
 @app.post("/api/track")
 async def track_product(body: TrackRequest):
@@ -178,6 +193,40 @@ async def get_tracked(limit: int = 100):
     items = await list_tracked_products(limit=limit)
     return {"count": len(items), "tracked": items}
 
+@app.post("/api/upload-products")
+async def upload_products(
+    body: UploadRequest,
+    x_api_key: str = Header(default="")
+):
+    """
+    Upload scraped products from a trusted machine.
+    """
+
+    if x_api_key != UPLOAD_API_KEY:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    if not body.products:
+        return {
+            "ok": True,
+            "received": 0,
+            "inserted": 0,
+        }
+
+    grouped = {}
+
+    for product in body.products:
+        grouped.setdefault(product.site, []).append(product.model_dump())
+
+    inserted = 0
+
+    for site, products in grouped.items():
+        inserted += await insert_products(products, site)
+
+    return {
+        "ok": True,
+        "received": len(body.products),
+        "inserted": inserted,
+    }
 
 @app.get("/api/image-proxy")
 async def image_proxy(url: str):

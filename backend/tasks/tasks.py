@@ -51,3 +51,34 @@ def scrape_jiji_task(self, category: str = "mobile-phones", item_count: int = 20
         return asyncio.run(_run_jiji(category, item_count))
     except Exception as exc:
         raise self.retry(exc=exc)
+    
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
+def scrape_all_task(
+    self,
+    category: str = "mobile-phones",
+    item_count: int = 20,
+):
+    try:
+        asyncio.run(_run_all(category, item_count))
+    except Exception as exc:
+        raise self.retry(exc=exc)
+
+
+async def _run_all(category: str, item_count: int):
+    await connect_db()
+
+    try:
+        jumia = JumiaScraper()
+        jumia_products = jumia.scrape_category(category, item_count)
+
+        if jumia_products:
+            await insert_products(jumia_products, "Jumia")
+
+        jiji = JijiScraper()
+        jiji_products = jiji.scrape_category(category, item_count)
+
+        if jiji_products:
+            await insert_products(jiji_products, "Jiji")
+
+    finally:
+        await disconnect_db()
