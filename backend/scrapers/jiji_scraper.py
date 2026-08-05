@@ -114,7 +114,9 @@ class JijiScraper:
             print(f"Found {len(product_items)} products")
             
             if not product_items:
-                logger.warning("No products found")
+                logger.error(f"Status: {response.status_code}")
+                logger.error(f"Final URL: {response.url}")
+                logger.error(response.text[:3000])
                 return []
             
             products = []

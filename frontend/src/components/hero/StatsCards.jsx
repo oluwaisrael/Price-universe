@@ -29,9 +29,29 @@ function TrendIcon() {
   )
 }
 
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 function formatNumber(n) {
   if (n == null || Number.isNaN(n)) return '—'
   return Number(n).toLocaleString('en-US')
+}
+
+function formatDate(dateString) {
+  if (!dateString) return "—"
+
+  return new Date(dateString).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
 }
 
 function StatsCards() {
@@ -59,6 +79,13 @@ function StatsCards() {
       value: '98%',
       label: 'Accuracy rate',
       accent: 'teal',
+    },
+    {
+      id: 'updated',
+      icon: ClockIcon,
+      value: isLoading ? '…' : formatDate(data.lastUpdated),
+      label: 'Last updated',
+      accent: 'purple',
     },
   ]
 

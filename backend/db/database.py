@@ -10,7 +10,7 @@ async def connect_db():
 
     await ensure_price_history_table()
     await ensure_tracked_table()
-    
+
 async def disconnect_db():
     if pool:
         await pool.close()
@@ -165,12 +165,12 @@ async def get_product_history(url: str, site: str = None):
 
     return [dict(r) for r in rows]
 
-
 async def get_stats():
     """
     Live dashboard stats for the hero section.
     - products_tracked: distinct (url, site) with a latest row
     - price_drops_today: products whose latest scrape today is lower than previous
+    - last_updated: latest scrape timestamp
     """
     async with pool.acquire() as conn:
         products_tracked = await conn.fetchval(
@@ -181,8 +181,6 @@ async def get_stats():
             """
         )
 
-        # Price drops today: for each product, if the most recent row today
-        # is lower than the previous row, count it.
         price_drops_today = await conn.fetchval(
             """
             WITH ordered AS (
@@ -204,11 +202,18 @@ async def get_stats():
             """
         )
 
+        latest_update = await conn.fetchval(
+            """
+            SELECT MAX(scraped_at)
+            FROM price_history
+            """
+        )
+
     return {
         "products_tracked": int(products_tracked or 0),
         "price_drops_today": int(price_drops_today or 0),
+        "last_updated": latest_update.isoformat() if latest_update else None,
     }
-
 
 async def ensure_price_history_table():
     """Create price_history table if missing."""

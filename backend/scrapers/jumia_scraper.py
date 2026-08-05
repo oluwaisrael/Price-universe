@@ -108,10 +108,10 @@ class JumiaScraper:
             print(f"Found {len(products_html)} products")
             
             if not products_html:
-                logger.warning(f"No products found. Debug: printing first 2000 chars of HTML")
-                print(response.text[:2000])
+                logger.error(f"Status: {response.status_code}")
+                logger.error(f"Final URL: {response.url}")
+                logger.error(response.text[:3000])
                 return []
-            
             products = []
             for product in products_html:
                 try:
